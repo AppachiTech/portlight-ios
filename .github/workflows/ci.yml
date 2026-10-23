@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core-linux:
+    name: Core tests (Linux, with a real sshd)
+    runs-on: ubuntu-24.04
+    container: swift:6.4.1-noble
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install OpenSSH (server for the integration tests)
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends openssh-server openssh-client
+          mkdir -p /run/sshd
+      - name: Test
+        working-directory: PortlightCore
+        run: swift test
+
+  app-ios:
+    name: App build (iOS, unsigned)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Core tests (macOS, without the sshd tests)
+        working-directory: PortlightCore
+        env:
+          PORTLIGHT_SKIP_SSHD: "1"
+        run: swift test
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project Portlight.xcodeproj -scheme Portlight \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO

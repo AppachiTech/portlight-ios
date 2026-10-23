@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  unsigned-ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install tools
+        run: brew install xcodegen
+      - name: Build unsigned IPA
+        run: scripts/build_unsigned_ipa.sh
+      - name: Keep the build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Portlight-unsigned-ipa
+          path: |
+            build/Portlight.ipa
+            build/Portlight.ipa.sha256
+      - name: Attach to the GitHub release
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          files: |
+            build/Portlight.ipa
+            build/Portlight.ipa.sha256
+          body: |
+            Unsigned build. iOS installs only signed apps: sign this with your own Apple ID
+            (AltStore or SideStore), or build from source. See docs/INSTALL.md.
+            Compare the SHA-256 with Portlight.ipa.sha256 before installing.
