@@ -1,0 +1,22 @@
+# SwiftPM
+.build/
+.swiftpm/
+/Packages
+Package.resolved.bak
+
+# Xcode (the project is generated from project.yml by XcodeGen)
+*.xcodeproj
+*.xcworkspace
+!Portlight.xcworkspace
+xcuserdata/
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# macOS
+.DS_Store
+
+# Local signing settings (team ID etc.), see docs/BUILDING.md
+Config/Signing.local.xcconfig
