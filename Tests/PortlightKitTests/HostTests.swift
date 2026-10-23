@@ -4,21 +4,21 @@ import Testing
 
 @Suite struct HostTests {
     @Test func displayNameAndAddress() {
-        var host = Host(hostname: "1.2.3.4", username: "ubuntu")
+        var host = SSHHost(hostname: "1.2.3.4", username: "ubuntu")
         #expect(host.displayName == "ubuntu@1.2.3.4")
         host.port = 2222
         host.label = "  web  "
         #expect(host.displayName == "web")
         #expect(host.address == "ubuntu@1.2.3.4:2222")
-        #expect(Host(hostname: "2001:db8::1", username: "me").address == "me@[2001:db8::1]")
+        #expect(SSHHost(hostname: "2001:db8::1", username: "me").address == "me@[2001:db8::1]")
     }
 
     @Test func validation() {
-        #expect(Host(hostname: "box", username: "me").validate().isEmpty)
-        #expect(Host(hostname: " ", username: "me").validate() == [.missingHostname])
-        #expect(Host(hostname: "a b", username: "me").validate() == [.invalidHostname])
-        #expect(Host(hostname: "box", port: 0, username: "").validate() == [.invalidPort, .missingUsername])
-        #expect(Host(hostname: "box", username: "me@x").validate() == [.invalidUsername])
+        #expect(SSHHost(hostname: "box", username: "me").validate().isEmpty)
+        #expect(SSHHost(hostname: " ", username: "me").validate() == [.missingHostname])
+        #expect(SSHHost(hostname: "a b", username: "me").validate() == [.invalidHostname])
+        #expect(SSHHost(hostname: "box", port: 0, username: "").validate() == [.invalidPort, .missingUsername])
+        #expect(SSHHost(hostname: "box", username: "me@x").validate() == [.invalidUsername])
     }
 
     @Test(arguments: [
@@ -55,19 +55,19 @@ import Testing
     }
 
     @Test func hostCodableRoundTripAndForwardCompatibility() throws {
-        let host = Host(label: "db", hostname: "db.internal", port: 2200, username: "admin", auth: .key(UUID()),
+        let host = SSHHost(label: "db", hostname: "db.internal", port: 2200, username: "admin", auth: .key(UUID()),
                         provider: .gcp, group: "Prod", jumpHostID: UUID(), startupCommand: "tmux a")
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let data = try encoder.encode(host)
-        #expect(try decoder.decode(Host.self, from: data).hostname == "db.internal")
+        #expect(try decoder.decode(SSHHost.self, from: data).hostname == "db.internal")
         // Unknown extra fields from a newer version are ignored.
         var object = try JSONSerialization.jsonObject(with: data) as! [String: Any]
         object["futureField"] = 42
         let extended = try JSONSerialization.data(withJSONObject: object)
-        #expect(try decoder.decode(Host.self, from: extended).auth == host.auth)
+        #expect(try decoder.decode(SSHHost.self, from: extended).auth == host.auth)
     }
 }
 

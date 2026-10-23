@@ -12,8 +12,10 @@ public struct AppSettings: Codable, Equatable, Sendable {
     public var cursorStyle: CursorStyle = .block
     public var cursorBlink: Bool = true
     public var keepScreenAwake: Bool = true
-    /// Require Face ID / passcode when the app opens.
-    public var appLock: Bool = false
+    /// How long the app may sit in the background before it locks again.
+    /// Unlocking (Face ID, Touch ID or the passcode) is always required;
+    /// this only allows a short grace period, capped at five minutes.
+    public var lockGracePeriod: Int = 0
     public var hapticBell: Bool = true
     public var scrollbackLines: Int = 5000
     public var keyBar: [KeyBarItem] = KeyBarItem.defaultLayout
@@ -32,7 +34,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
         cursorStyle = (try? c.decodeIfPresent(CursorStyle.self, forKey: .cursorStyle)) ?? d.cursorStyle
         cursorBlink = try c.decodeIfPresent(Bool.self, forKey: .cursorBlink) ?? d.cursorBlink
         keepScreenAwake = try c.decodeIfPresent(Bool.self, forKey: .keepScreenAwake) ?? d.keepScreenAwake
-        appLock = try c.decodeIfPresent(Bool.self, forKey: .appLock) ?? d.appLock
+        lockGracePeriod = try c.decodeIfPresent(Int.self, forKey: .lockGracePeriod) ?? d.lockGracePeriod
+        lockGracePeriod = AppLockPolicy.allowedGracePeriods.contains(lockGracePeriod) ? lockGracePeriod : 0
         hapticBell = try c.decodeIfPresent(Bool.self, forKey: .hapticBell) ?? d.hapticBell
         scrollbackLines = try c.decodeIfPresent(Int.self, forKey: .scrollbackLines) ?? d.scrollbackLines
         keyBar = (try? c.decodeIfPresent([KeyBarItem].self, forKey: .keyBar)) ?? d.keyBar

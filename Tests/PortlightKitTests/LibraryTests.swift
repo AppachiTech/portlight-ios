@@ -12,7 +12,7 @@ import Testing
     @Test func hostsPersistAcrossLaunches() throws {
         let library = makeLibrary()
         // Whole seconds: the JSON files store ISO 8601 dates, which drop fractions.
-        let host = Host(label: "web", hostname: "web.example.com", username: "ubuntu", provider: .aws, group: "Prod",
+        let host = SSHHost(label: "web", hostname: "web.example.com", username: "ubuntu", provider: .aws, group: "Prod",
                         createdAt: Date(timeIntervalSince1970: 1_790_000_000))
         try library.save(host)
         try library.setPassword("hunter2", for: host.id)
@@ -26,13 +26,13 @@ import Testing
 
     @Test func invalidHostsAreRefused() {
         let library = makeLibrary()
-        #expect(throws: HostValidationError.missingHostname) { try library.save(Host(hostname: "", username: "me")) }
+        #expect(throws: HostValidationError.missingHostname) { try library.save(SSHHost(hostname: "", username: "me")) }
         #expect(library.hosts.isEmpty)
     }
 
     @Test func updateDeleteAndDuplicate() throws {
         let library = makeLibrary()
-        var host = Host(hostname: "a", username: "me")
+        var host = SSHHost(hostname: "a", username: "me")
         try library.save(host)
         host.port = 2222
         try library.save(host)
@@ -47,9 +47,9 @@ import Testing
 
     @Test func jumpHostsAreCheckedForLoops() throws {
         let library = makeLibrary()
-        let bastion = Host(label: "bastion", hostname: "b", username: "me")
+        let bastion = SSHHost(label: "bastion", hostname: "b", username: "me")
         try library.save(bastion)
-        var inner = Host(label: "inner", hostname: "i", username: "me", jumpHostID: bastion.id)
+        var inner = SSHHost(label: "inner", hostname: "i", username: "me", jumpHostID: bastion.id)
         try library.save(inner)
         #expect(try library.jumpChain(for: inner.id).map(\.label) == ["bastion", "inner"])
 
@@ -68,7 +68,7 @@ import Testing
         let library = makeLibrary()
         let now = Date()
         for (i, name) in ["zeta", "alpha", "mid", "beta", "gamma"].enumerated() {
-            var host = Host(label: name, hostname: "\(name).example.com", username: "me", provider: i == 0 ? .gcp : .aws)
+            var host = SSHHost(label: name, hostname: "\(name).example.com", username: "me", provider: i == 0 ? .gcp : .aws)
             host.group = i < 2 ? "Prod" : nil
             host.lastConnectedAt = i == 3 ? now : (i == 4 ? now.addingTimeInterval(-60) : nil)
             try library.save(host)
@@ -96,10 +96,12 @@ import Testing
             try library.importKey(KeyFixtures.p384Enc, passphrase: KeyFixtures.passphrase)
         }
 
-        let exported = try library.exportPrivateKey(generated, passphrase: "pw")
-        #expect(try KeyImporter.importKey(exported, passphrase: "pw").key.publicKey == generated.publicKey)
+        #expect(throws: LibraryError.weakExportPassphrase) { try library.exportPrivateKey(generated, passphrase: "short") }
+        let exported = try library.exportPrivateKey(generated, passphrase: "long enough")
+        #expect(try OpenSSHKeyFile.isEncrypted(pem: exported))
+        #expect(try KeyImporter.importKey(exported, passphrase: "long enough").key.publicKey == generated.publicKey)
 
-        let host = Host(hostname: "box", username: "me", auth: .key(generated.id))
+        let host = SSHHost(hostname: "box", username: "me", auth: .key(generated.id))
         try library.save(host)
         #expect(library.hostsUsing(generated).map(\.id) == [host.id])
         library.delete(generated)
@@ -117,7 +119,7 @@ import Testing
         let library = makeLibrary()
         let record = try KeyRecord(name: "SE", publicKey: SSHPrivateKey.generate(.ecdsaP256).publicKey, storage: .secureEnclave)
         library.addExternalKey(record)
-        #expect(throws: LibraryError.keyNotExportable) { try library.exportPrivateKey(record, passphrase: nil) }
+        #expect(throws: LibraryError.keyNotExportable) { try library.exportPrivateKey(record, passphrase: "long enough") }
     }
 
     @Test func knownHostsPersist() throws {

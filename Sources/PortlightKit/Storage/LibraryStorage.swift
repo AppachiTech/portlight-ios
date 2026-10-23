@@ -15,6 +15,13 @@ public struct DirectoryStorage: LibraryStorage {
     public init(directory: URL) throws {
         self.directory = directory
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        #if os(iOS)
+        // Host names and addresses stay on this device, out of iCloud backups.
+        var url = directory
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try url.setResourceValues(values)
+        #endif
     }
 
     /// `Application Support/Portlight`.

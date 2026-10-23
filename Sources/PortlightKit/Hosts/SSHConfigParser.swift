@@ -145,16 +145,16 @@ public enum SSHConfigParser {
     /// Turns parsed entries into hosts, linking ProxyJump to hosts by alias
     /// (among the new entries or `existing`). Entries whose alias matches an
     /// existing host's label are skipped.
-    public static func makeHosts(from entries: [Entry], existing: [Host] = [], defaultUser: String = "root") -> [Host] {
+    public static func makeHosts(from entries: [Entry], existing: [SSHHost] = [], defaultUser: String = "root") -> [SSHHost] {
         let taken = Set(existing.map { $0.label.lowercased() })
-        var created: [String: Host] = [:]
-        var ordered: [Host] = []
+        var created: [String: SSHHost] = [:]
+        var ordered: [SSHHost] = []
         for entry in entries where !taken.contains(entry.alias.lowercased()) {
             var notes: [String] = []
             if let identity = entry.identityFile {
                 notes.append("Imported from ssh config. IdentityFile was \(identity): import that key under Keys and pick it here.")
             }
-            let host = Host(
+            let host = SSHHost(
                 label: entry.alias, hostname: entry.hostname, port: entry.port ?? 22,
                 username: entry.user ?? defaultUser, auth: .password, provider: guessProvider(entry.hostname),
                 notes: notes.isEmpty ? nil : notes.joined(separator: "\n"))

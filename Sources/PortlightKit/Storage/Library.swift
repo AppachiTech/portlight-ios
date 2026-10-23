@@ -7,7 +7,7 @@ import Observation
 @Observable
 @MainActor
 public final class Library {
-    public private(set) var hosts: [Host] = []
+    public private(set) var hosts: [SSHHost] = []
     public private(set) var keys: [KeyRecord] = []
     public private(set) var knownHosts = KnownHosts()
     public private(set) var snippets: [Snippet] = []
@@ -31,7 +31,7 @@ public final class Library {
     public init(storage: LibraryStorage, secrets: SecretStore) {
         self.storage = storage
         self.secrets = secrets
-        hosts = load([Host].self, Files.hosts) ?? []
+        hosts = load([SSHHost].self, Files.hosts) ?? []
         keys = (load([KeyRecord].self, Files.keys) ?? []).filter { $0.publicKey.keyAlgorithm != nil }
         knownHosts = load(KnownHosts.self, Files.knownHosts) ?? KnownHosts()
         snippets = load([Snippet].self, Files.snippets) ?? Snippet.starters
@@ -41,7 +41,7 @@ public final class Library {
     // MARK: Hosts
 
     /// Adds the host, or replaces the saved one with the same id.
-    public func save(_ host: Host) throws {
+    public func save(_ host: SSHHost) throws {
         let problems = host.validate()
         if let first = problems.first { throw first }
         if let jump = host.jumpHostID {
@@ -59,7 +59,7 @@ public final class Library {
         persist(hosts, Files.hosts)
     }
 
-    public func delete(_ host: Host) {
+    public func delete(_ host: SSHHost) {
         hosts.removeAll { $0.id == host.id }
         for index in hosts.indices where hosts[index].jumpHostID == host.id {
             hosts[index].jumpHostID = nil
@@ -68,7 +68,7 @@ public final class Library {
         persist(hosts, Files.hosts)
     }
 
-    public func duplicate(_ host: Host) throws -> Host {
+    public func duplicate(_ host: SSHHost) throws -> SSHHost {
         var copy = host
         copy.id = UUID()
         copy.label = host.displayName + " copy"
@@ -78,7 +78,7 @@ public final class Library {
         return copy
     }
 
-    public func host(_ id: UUID?) -> Host? {
+    public func host(_ id: UUID?) -> SSHHost? {
         guard let id else { return nil }
         return hosts.first { $0.id == id }
     }
@@ -90,12 +90,12 @@ public final class Library {
     }
 
     /// The hops to reach a host, outermost first, ending with the host.
-    public func jumpChain(for hostID: UUID) throws -> [Host] {
+    public func jumpChain(for hostID: UUID) throws -> [SSHHost] {
         try jumpChain(for: hostID, in: hosts)
     }
 
-    func jumpChain(for hostID: UUID, in list: [Host]) throws -> [Host] {
-        var chain: [Host] = []
+    func jumpChain(for hostID: UUID, in list: [SSHHost]) throws -> [SSHHost] {
+        var chain: [SSHHost] = []
         var seen: Set<UUID> = []
         var current: UUID? = hostID
         while let id = current {
@@ -110,7 +110,7 @@ public final class Library {
 
     public struct Section: Identifiable, Equatable {
         public var title: String
-        public var hosts: [Host]
+        public var hosts: [SSHHost]
         public var id: String { title }
     }
 
@@ -214,12 +214,18 @@ public final class Library {
         return try OpenSSHKeyFile.decode(pem: pem, passphrase: nil).key
     }
 
-    /// The OpenSSH private key file, encrypted when a passphrase is given.
-    public func exportPrivateKey(_ record: KeyRecord, passphrase: String?) throws -> String {
-        try OpenSSHKeyFile.encode(try privateKey(for: record), comment: record.name, passphrase: passphrase)
+    /// Shortest passphrase accepted for exporting a private key.
+    public nonisolated static let minimumExportPassphraseLength = 8
+
+    /// The OpenSSH private key file, always encrypted (aes256-ctr, bcrypt):
+    /// an exported key leaves the Keychain's protection, so it must carry its own.
+    public func exportPrivateKey(_ record: KeyRecord, passphrase: String) throws -> String {
+        guard record.storage == .keychain else { throw LibraryError.keyNotExportable }
+        guard passphrase.count >= Self.minimumExportPassphraseLength else { throw LibraryError.weakExportPassphrase }
+        return try OpenSSHKeyFile.encode(try privateKey(for: record), comment: record.name, passphrase: passphrase)
     }
 
-    public func hostsUsing(_ record: KeyRecord) -> [Host] {
+    public func hostsUsing(_ record: KeyRecord) -> [SSHHost] {
         hosts.filter { $0.auth.keyID == record.id }
     }
 
@@ -276,10 +282,10 @@ public final class Library {
 
     /// Imports hosts from `~/.ssh/config` text. Returns what was added and
     /// anything that was skipped.
-    public func importSSHConfig(_ text: String) -> (added: [Host], warnings: [String]) {
+    public func importSSHConfig(_ text: String) -> (added: [SSHHost], warnings: [String]) {
         let parsed = SSHConfigParser.parse(text)
         let created = SSHConfigParser.makeHosts(from: parsed.entries, existing: hosts)
-        var added: [Host] = []
+        var added: [SSHHost] = []
         var warnings = parsed.warnings
         for host in created {
             if let problem = host.validate().first {
@@ -359,6 +365,7 @@ public enum LibraryError: Error, Equatable, LocalizedError {
     case duplicateKey(String)
     case keyNotExportable
     case missingSecret
+    case weakExportPassphrase
 
     public var errorDescription: String? {
         switch self {
@@ -368,6 +375,7 @@ public enum LibraryError: Error, Equatable, LocalizedError {
         case .duplicateKey(let name): "That key is already saved as \"\(name)\"."
         case .keyNotExportable: "This key lives in the Secure Enclave and can't be exported."
         case .missingSecret: "The private key is missing from the Keychain."
+        case .weakExportPassphrase: "Use a passphrase of at least \(Library.minimumExportPassphraseLength) characters to export a key."
         }
     }
 }

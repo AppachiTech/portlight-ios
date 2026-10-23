@@ -15,7 +15,7 @@ public enum AuthMethod: Codable, Hashable, Sendable {
 }
 
 /// A saved server.
-public struct Host: Codable, Identifiable, Hashable, Sendable {
+public struct SSHHost: Codable, Identifiable, Hashable, Sendable {
     public var id: UUID
     public var label: String
     public var hostname: String

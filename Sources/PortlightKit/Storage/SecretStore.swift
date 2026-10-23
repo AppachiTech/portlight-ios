@@ -36,59 +36,104 @@ public final class InMemorySecretStore: SecretStore, @unchecked Sendable {
 
 #if canImport(Security)
 import Security
+#if canImport(LocalAuthentication)
+import LocalAuthentication
+#endif
 
-/// Keychain storage: generic passwords in Portlight's service, readable only
-/// while the device is unlocked, never synced to iCloud or included in
-/// backups (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly`).
+/// Keychain storage, hardened:
+///
+/// - `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly`: readable only while
+///   the device is unlocked, never synced to iCloud or restored to another
+///   device, and destroyed if the passcode is removed.
+/// - Access control `.userPresence`: iOS itself refuses to release the item
+///   without Face ID, Touch ID or the passcode, so the protection doesn't
+///   depend on the app's lock screen alone. The app passes the
+///   `LAContext` it unlocked with, so the user isn't asked twice.
 public struct KeychainSecretStore: SecretStore {
     public struct KeychainError: Error, CustomStringConvertible {
         public let status: OSStatus
-        public var description: String { "Keychain error \(status)" }
+        public var description: String {
+            switch status {
+            case errSecUserCanceled: "Authentication was cancelled."
+            case errSecAuthFailed: "Authentication failed."
+            case errSecInteractionNotAllowed: "The device is locked."
+            default: "Keychain error \(status)"
+            }
+        }
     }
 
     public let service: String
+    /// Whether items require user presence. Off only for unit tests on a
+    /// Mac without the data-protection keychain entitlement.
+    public let requireUserPresence: Bool
+    #if canImport(LocalAuthentication)
+    /// The authenticated context to read with; nil lets iOS prompt itself.
+    public let authenticationContext: @Sendable () -> LAContext?
+    #endif
 
-    public init(service: String = "dev.portlight.secrets") {
+    #if canImport(LocalAuthentication)
+    public init(service: String = "dev.portlight.secrets", requireUserPresence: Bool = true,
+                authenticationContext: @escaping @Sendable () -> LAContext? = { nil }) {
         self.service = service
+        self.requireUserPresence = requireUserPresence
+        self.authenticationContext = authenticationContext
     }
+    #else
+    public init(service: String = "dev.portlight.secrets", requireUserPresence: Bool = true) {
+        self.service = service
+        self.requireUserPresence = requireUserPresence
+    }
+    #endif
 
-    private func query(_ account: String) -> [String: Any] {
-        [
+    private func baseQuery(_ account: String) -> [String: Any] {
+        var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
+            kSecUseDataProtectionKeychain as String: true,
         ]
+        #if canImport(LocalAuthentication)
+        if let context = authenticationContext() {
+            query[kSecUseAuthenticationContext as String] = context
+        }
+        #endif
+        return query
     }
 
     public func data(for account: String) throws -> Data? {
-        var q = query(account)
-        q[kSecReturnData as String] = true
-        q[kSecMatchLimit as String] = kSecMatchLimitOne
+        var query = baseQuery(account)
+        query[kSecReturnData as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
         var item: CFTypeRef?
-        let status = SecItemCopyMatching(q as CFDictionary, &item)
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
         if status == errSecItemNotFound { return nil }
         guard status == errSecSuccess else { throw KeychainError(status: status) }
         return item as? Data
     }
 
     public func set(_ data: Data, for account: String) throws {
-        let attributes: [String: Any] = [
-            kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-        ]
-        let status = SecItemUpdate(query(account) as CFDictionary, attributes as CFDictionary)
-        if status == errSecItemNotFound {
-            var add = query(account)
-            add.merge(attributes) { $1 }
-            let added = SecItemAdd(add as CFDictionary, nil)
-            guard added == errSecSuccess else { throw KeychainError(status: added) }
-        } else if status != errSecSuccess {
-            throw KeychainError(status: status)
+        // Delete then add, so the access control is always the current one.
+        try delete(account)
+        var add = baseQuery(account)
+        add[kSecValueData as String] = data
+        if requireUserPresence {
+            var error: Unmanaged<CFError>?
+            guard let access = SecAccessControlCreateWithFlags(
+                nil, kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly, .userPresence, &error) else {
+                throw KeychainError(status: errSecParam)
+            }
+            add[kSecAttrAccessControl as String] = access
+        } else {
+            add[kSecAttrAccessible as String] = kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
         }
+        let status = SecItemAdd(add as CFDictionary, nil)
+        guard status == errSecSuccess else { throw KeychainError(status: status) }
     }
 
     public func delete(_ account: String) throws {
-        let status = SecItemDelete(query(account) as CFDictionary)
+        var query = baseQuery(account)
+        query.removeValue(forKey: kSecUseAuthenticationContext as String)
+        let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError(status: status) }
     }
 }
