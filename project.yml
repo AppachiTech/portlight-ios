@@ -1,0 +1,77 @@
+# XcodeGen spec: run `xcodegen generate` (or `make project`) to create
+# Portlight.xcodeproj. The generated project is not committed.
+name: Portlight
+options:
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+configFiles:
+  Debug: Config/Portlight.xcconfig
+  Release: Config/Portlight.xcconfig
+packages:
+  PortlightCore:
+    path: PortlightCore
+  SwiftTerm:
+    url: https://github.com/migueldeicaza/SwiftTerm
+    exactVersion: 1.20.0
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+targets:
+  Portlight:
+    type: application
+    platform: iOS
+    sources:
+      - path: App/Portlight
+    dependencies:
+      - package: PortlightCore
+        product: PortlightKit
+      - package: PortlightCore
+        product: PortlightSSH
+      - package: SwiftTerm
+        product: SwiftTerm
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(PORTLIGHT_BUNDLE_ID)
+        PRODUCT_NAME: Portlight
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SWIFT_STRICT_CONCURRENCY: minimal
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: App/Portlight/Info.plist
+      properties:
+        CFBundleDisplayName: Portlight
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSFaceIDUsageDescription: Portlight uses Face ID to unlock, so only you can open your servers and keys.
+        NSLocalNetworkUsageDescription: Portlight connects over SSH to servers you add, including ones on your local network.
+        UIFileSharingEnabled: false
+        LSSupportsOpeningDocumentsInPlace: false
+schemes:
+  Portlight:
+    build:
+      targets:
+        Portlight: all
+    test:
+      targets:
+        # The SSH integration tests need a local sshd, so they run with
+        # `swift test` in PortlightCore (Linux or macOS), not on iOS.
+        - package: PortlightCore/PortlightKitTests

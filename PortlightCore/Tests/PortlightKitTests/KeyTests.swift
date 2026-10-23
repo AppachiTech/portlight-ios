@@ -106,6 +106,13 @@ import Testing
         #expect(throws: SSHKeyError.invalidPublicKey) { try SSHPublicKey(openSSH: "ssh-rsa " + line.split(separator: " ")[1]) }
     }
 
+    @Test func secureEnclaveStylePublicKey() throws {
+        guard case .ecdsaP256(let key) = SSHPrivateKey.generate(.ecdsaP256) else { return }
+        let point = Array(key.publicKey.x963Representation)
+        #expect(try SSHPublicKey.ecdsaP256(x963Representation: point) == SSHPrivateKey.ecdsaP256(key).publicKey)
+        #expect(throws: SSHKeyError.invalidPublicKey) { try SSHPublicKey.ecdsaP256(x963Representation: Array(point.dropFirst())) }
+    }
+
     @Test func fingerprintMatchesSSHKeygenForFixtures() throws {
         #expect(try SSHPublicKey(openSSH: KeyFixtures.ed25519PlainPublic).sha256Fingerprint == KeyFixtures.ed25519PlainFingerprint)
         // Host keys may be RSA: parsing and fingerprinting still work.

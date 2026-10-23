@@ -1,0 +1,14 @@
+// Shared build settings for the Portlight app.
+//
+// To install on your own iPhone, copy Signing.local.xcconfig.example to
+// Signing.local.xcconfig (git-ignored) and set your Apple team ID and a
+// bundle ID that's unique to you. See docs/BUILDING.md.
+
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1
+
+PORTLIGHT_BUNDLE_ID = dev.portlight.app
+DEVELOPMENT_TEAM =
+CODE_SIGN_STYLE = Automatic
+
+#include? "Signing.local.xcconfig"

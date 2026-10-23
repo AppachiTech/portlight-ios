@@ -90,6 +90,13 @@ public struct SSHPublicKey: Hashable, Sendable {
         self.blob = writer.bytes
     }
 
+    /// The public half of a P-256 key held elsewhere (the Secure Enclave),
+    /// from its uncompressed X9.63 point.
+    public static func ecdsaP256(x963Representation point: [UInt8]) throws -> SSHPublicKey {
+        guard point.count == 65, point.first == 0x04 else { throw SSHKeyError.invalidPublicKey }
+        return SSHPublicKey(algorithm: .ecdsaP256, point: point)
+    }
+
     /// Wraps a wire blob from a server or a file. Any algorithm is accepted
     /// here (host keys may be RSA); only the name is checked against the blob.
     public init(blob: [UInt8]) throws {

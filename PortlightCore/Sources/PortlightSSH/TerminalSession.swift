@@ -73,9 +73,9 @@ public final class PasswordPrompt: Identifiable {
 /// The user dismissed a password prompt.
 struct PromptCancelled: Error {}
 
-/// Supplies private keys the Library can't read on its own (Secure Enclave
-/// keys on iOS).
-public typealias ExternalKeyProvider = @MainActor (KeyRecord) throws -> NIOSSHPrivateKey
+/// Supplies credentials for keys the Library can't read on its own (Secure
+/// Enclave keys on iOS).
+public typealias ExternalKeyProvider = @MainActor (KeyRecord) throws -> SSHCredential
 
 /// One terminal tab: connects to a saved host (through its jump hosts),
 /// runs a shell and feeds the terminal view.
@@ -317,7 +317,7 @@ public final class TerminalSession: Identifiable {
                 return ([.key(try library.privateKey(for: record))], nil)
             case .secureEnclave:
                 guard let externalKeys else { throw LibraryError.missingSecret }
-                return ([.privateKey(try externalKeys(record))], nil)
+                return ([try externalKeys(record)], nil)
             }
         case .password:
             if !forcePrompt, let saved = library.password(for: hop.id) {

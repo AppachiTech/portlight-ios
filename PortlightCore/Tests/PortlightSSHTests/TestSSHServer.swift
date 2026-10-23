@@ -134,8 +134,10 @@ enum Spawn {
         posix_spawn_file_actions_adddup2(&actions, 1, 2)
         let argv = ([path] + arguments).map { strdup($0) } + [nil]
         defer { argv.forEach { free($0) } }
+        let envp = ProcessInfo.processInfo.environment.map { strdup("\($0.key)=\($0.value)") } + [nil]
+        defer { envp.forEach { free($0) } }
         var pid: pid_t = 0
-        let result = posix_spawn(&pid, path, &actions, nil, argv, environ)
+        let result = posix_spawn(&pid, path, &actions, nil, argv, envp)
         guard result == 0 else { throw NSError(domain: "Spawn", code: Int(result)) }
         return pid
     }

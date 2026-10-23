@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerates Sources/PortlightKit/Keys/BlowfishConstants.swift.
+"""Regenerates PortlightCore/Sources/PortlightKit/Keys/BlowfishConstants.swift.
 
 Blowfish's initial P-array and S-boxes are the fractional hexadecimal digits
 of pi. Computing them here (Machin's formula, integer arithmetic) instead of
@@ -47,7 +47,7 @@ def main() -> None:
         "}",
         "",
     ]
-    path = pathlib.Path(__file__).resolve().parent.parent / "Sources/PortlightKit/Keys/BlowfishConstants.swift"
+    path = pathlib.Path(__file__).resolve().parent.parent / "PortlightCore/Sources/PortlightKit/Keys/BlowfishConstants.swift"
     path.write_text("\n".join(out))
     print(f"wrote {path}")
 

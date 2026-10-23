@@ -1,0 +1,9 @@
+// Copy to Config/Signing.local.xcconfig (it's git-ignored) and fill in.
+
+// Your team ID: Xcode → Settings → Accounts → your Apple ID → Team.
+// A free Apple ID works (apps expire after 7 days); a paid developer
+// account gives one year.
+DEVELOPMENT_TEAM = ABCDE12345
+
+// Must be unique to you, e.g. com.yourname.portlight
+PORTLIGHT_BUNDLE_ID = com.yourname.portlight
