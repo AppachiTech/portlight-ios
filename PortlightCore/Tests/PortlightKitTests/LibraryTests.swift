@@ -171,3 +171,31 @@ import Testing
         #expect(try disk.read("missing.json") == nil)
     }
 }
+
+@MainActor
+@Suite struct FreshInstallTests {
+    @Test func leftoverSecretsAreClearedOnAFreshInstall() throws {
+        // Keychain items outlive the app; its files don't.
+        let storage = MemoryStorage()
+        let secrets = InMemorySecretStore()
+        try secrets.set(Data("old".utf8), for: SecretAccount.password(UUID()))
+        Library.clearSecretsLeftFromAnEarlierInstall(storage: storage, secrets: secrets)
+        #expect(secrets.accounts.isEmpty)
+        // Only once: later launches keep what's stored.
+        try secrets.set(Data("new".utf8), for: SecretAccount.password(UUID()))
+        Library.clearSecretsLeftFromAnEarlierInstall(storage: storage, secrets: secrets)
+        #expect(secrets.accounts.count == 1)
+    }
+
+    @Test func anExistingLibraryIsNeverCleared() throws {
+        // Upgrading from a build without the marker must keep secrets.
+        let storage = MemoryStorage()
+        let secrets = InMemorySecretStore()
+        let library = Library(storage: storage, secrets: secrets)
+        let host = SSHHost(hostname: "box", username: "me")
+        try library.save(host)
+        try library.setPassword("pw", for: host.id)
+        Library.clearSecretsLeftFromAnEarlierInstall(storage: storage, secrets: secrets)
+        #expect(Library(storage: storage, secrets: secrets).password(for: host.id) == "pw")
+    }
+}

@@ -31,6 +31,11 @@ final class AppModel {
         let lock = AppLock(gracePeriod: probe.settings.lockGracePeriod)
         let box = lock.contextBox
         let secrets = KeychainSecretStore(authenticationContext: { box.context })
+        // Only with the real data folder: in-memory fallback storage would
+        // look like a fresh install and wipe secrets that are still in use.
+        if problem == nil {
+            Library.clearSecretsLeftFromAnEarlierInstall(storage: storage, secrets: secrets)
+        }
         let library = Library(storage: storage, secrets: secrets)
         self.lock = lock
         self.library = library

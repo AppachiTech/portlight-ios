@@ -20,12 +20,29 @@ public final class Library {
     @ObservationIgnored let storage: LibraryStorage
     @ObservationIgnored public let secrets: SecretStore
 
+    /// Keychain items outlive the app, but its files don't: after a
+    /// delete and reinstall, passwords and keys from the old install would
+    /// sit orphaned in the Keychain. On the first launch of an install
+    /// (no marker file, and no saved hosts or keys, so an upgrade from a
+    /// build without the marker keeps everything) they're removed.
+    public static func clearSecretsLeftFromAnEarlierInstall(storage: LibraryStorage, secrets: SecretStore) {
+        let hasMarker = (try? storage.read(Files.installed)) != nil
+        let hasLibrary = [Files.hosts, Files.keys].contains { (try? storage.read($0)) != nil }
+        if !hasMarker && !hasLibrary {
+            try? secrets.deleteAll()
+        }
+        if !hasMarker {
+            try? storage.write(Data(), name: Files.installed)
+        }
+    }
+
     enum Files {
         static let hosts = "hosts.json"
         static let keys = "keys.json"
         static let knownHosts = "known_hosts.json"
         static let snippets = "snippets.json"
         static let settings = "settings.json"
+        static let installed = "installed"
     }
 
     public init(storage: LibraryStorage, secrets: SecretStore) {

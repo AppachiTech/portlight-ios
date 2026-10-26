@@ -6,6 +6,8 @@ public protocol SecretStore: Sendable {
     func data(for account: String) throws -> Data?
     func set(_ data: Data, for account: String) throws
     func delete(_ account: String) throws
+    /// Removes every secret this store holds.
+    func deleteAll() throws
 }
 
 public enum SecretAccount {
@@ -29,6 +31,10 @@ public final class InMemorySecretStore: SecretStore, @unchecked Sendable {
 
     public func delete(_ account: String) throws {
         _ = lock.withLock { values.removeValue(forKey: account) }
+    }
+
+    public func deleteAll() throws {
+        lock.withLock { values.removeAll() }
     }
 
     public var accounts: [String] { lock.withLock { Array(values.keys).sorted() } }
@@ -133,6 +139,12 @@ public struct KeychainSecretStore: SecretStore {
     public func delete(_ account: String) throws {
         var query = baseQuery(account)
         query.removeValue(forKey: kSecUseAuthenticationContext as String)
+        let status = SecItemDelete(query as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError(status: status) }
+    }
+
+    public func deleteAll() throws {
+        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service]
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else { throw KeychainError(status: status) }
     }
