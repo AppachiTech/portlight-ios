@@ -4,6 +4,23 @@ public enum CursorStyle: String, Codable, CaseIterable, Sendable {
     case block, underline, bar
 }
 
+/// Where the voice input controls sit next to a landscape terminal.
+public enum VoiceInputLayout: String, Codable, CaseIterable, Sendable {
+    /// A column beside the terminal, always showing the draft.
+    case sidePanel
+    /// One row under the terminal, so it keeps the full width.
+    case bottomStrip
+}
+
+/// Which way the terminal screen faces.
+public enum TerminalOrientation: String, Codable, CaseIterable, Sendable {
+    /// Follows the phone.
+    case automatic
+    /// Turns to landscape, even with the phone's rotation lock on.
+    case landscape
+    case portrait
+}
+
 /// User preferences. Decoding fills in defaults for anything missing, so
 /// older settings files keep loading as fields are added.
 public struct AppSettings: Codable, Equatable, Sendable {
@@ -21,10 +38,28 @@ public struct AppSettings: Codable, Equatable, Sendable {
     public var keyBar: [KeyBarItem] = KeyBarItem.defaultLayout
     /// Seconds between keepalive probes on idle connections; 0 disables.
     public var keepAliveInterval: Int = 30
+    /// Show the speak-to-type controls next to the terminal in landscape.
+    public var voiceInput: Bool = true
+    public var voiceInputLayout: VoiceInputLayout = .sidePanel
+    public var terminalOrientation: TerminalOrientation = .automatic
 
     public static let fontSizeRange: ClosedRange<Double> = 8...28
 
     public init() {}
+
+    /// One step bigger or smaller, landing on whole points within range.
+    public static func fontSize(_ size: Double, steppedBy step: Int) -> Double {
+        let next = (step > 0 ? size.rounded(.down) : size.rounded(.up)) + Double(step)
+        return min(max(next, fontSizeRange.lowerBound), fontSizeRange.upperBound)
+    }
+
+    /// The largest whole-point size that fits `columns` characters across
+    /// `width` points, given a monospaced font's advance per point of size.
+    public static func fontSize(fitting columns: Int, inWidth width: Double, advancePerPoint: Double) -> Double? {
+        guard columns > 0, width > 0, advancePerPoint > 0 else { return nil }
+        let size = (width / (Double(columns) * advancePerPoint)).rounded(.down)
+        return min(max(size, fontSizeRange.lowerBound), fontSizeRange.upperBound)
+    }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -40,6 +75,9 @@ public struct AppSettings: Codable, Equatable, Sendable {
         scrollbackLines = try c.decodeIfPresent(Int.self, forKey: .scrollbackLines) ?? d.scrollbackLines
         keyBar = (try? c.decodeIfPresent([KeyBarItem].self, forKey: .keyBar)) ?? d.keyBar
         keepAliveInterval = try c.decodeIfPresent(Int.self, forKey: .keepAliveInterval) ?? d.keepAliveInterval
+        voiceInput = try c.decodeIfPresent(Bool.self, forKey: .voiceInput) ?? d.voiceInput
+        voiceInputLayout = (try? c.decodeIfPresent(VoiceInputLayout.self, forKey: .voiceInputLayout)) ?? d.voiceInputLayout
+        terminalOrientation = (try? c.decodeIfPresent(TerminalOrientation.self, forKey: .terminalOrientation)) ?? d.terminalOrientation
         fontSize = min(max(fontSize, Self.fontSizeRange.lowerBound), Self.fontSizeRange.upperBound)
     }
 }
