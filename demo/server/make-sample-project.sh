@@ -17,6 +17,7 @@ commit() {
   git commit -q -m "$2"
 }
 
+printf '__pycache__/\n.pytest_cache/\n' > .gitignore
 cat > README.md <<'EOF'
 # shop-api
 

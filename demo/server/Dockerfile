@@ -6,11 +6,12 @@
 FROM ubuntu:24.04
 
 ARG WITH_CLAUDE=0
+ARG WITH_SUVADU=0
 ENV DEBIAN_FRONTEND=noninteractive LANG=C.UTF-8
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      openssh-server sudo git htop tmux vim less curl ca-certificates tree python3 \
+      openssh-server sudo git htop tmux vim less curl ca-certificates tree python3 python3-pytest \
  && if [ "$WITH_CLAUDE" = "1" ]; then \
       apt-get install -y --no-install-recommends nodejs npm \
       && npm install -g @anthropic-ai/claude-code; \
@@ -43,6 +44,18 @@ COPY --chown=dev:dev bashrc /home/dev/.bashrc.demo
 COPY --chown=dev:dev make-sample-project.sh /tmp/make-sample-project.sh
 RUN cat /home/dev/.bashrc.demo >> /home/dev/.bashrc && rm /home/dev/.bashrc.demo \
  && su dev -c 'bash /tmp/make-sample-project.sh' && rm /tmp/make-sample-project.sh
+
+# Optional: Suvadu (https://suvadu.sh) records every command run on the
+# server, including Claude Code's when both are installed. Its installer
+# verifies the download's SHA-256. The shell hook goes last in .bashrc.
+RUN if [ "$WITH_SUVADU" = "1" ]; then \
+      curl -fsSL https://downloads.appachi.tech/suvadu/install.sh \
+        | bash -s -- --dir /usr/local/bin --no-modify-rc \
+      && echo 'eval "$(suv init bash)"' >> /home/dev/.bashrc \
+      && if [ "$WITH_CLAUDE" = "1" ]; then \
+           su dev -c 'mkdir -p ~/.claude && [ -f ~/.claude/settings.json ] || echo "{}" > ~/.claude/settings.json; suv init claude-code'; \
+         fi; \
+    fi
 
 EXPOSE 22
 CMD ["/usr/sbin/sshd", "-D", "-e"]

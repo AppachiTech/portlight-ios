@@ -2,7 +2,8 @@
 # Runs the demo SSH server (see Dockerfile) on this Mac, reachable from a
 # phone on the same Wi-Fi.
 #
-#   demo-server.sh up [--with-claude]   build and start it (PORT=2223 … for another port)
+#   demo-server.sh up [--with-claude] [--with-suvadu]
+#                                       build and start it (PORT=2223 … for another port)
 #   demo-server.sh key 'ssh-ed25519 …'  allow a public key (from Portlight)
 #   demo-server.sh status               show how to connect
 #   demo-server.sh down                 stop and remove it
@@ -45,9 +46,15 @@ EOF
 
 case "${1:-}" in
   up)
-    claude=0
-    [ "${2:-}" = "--with-claude" ] && claude=1
-    docker build --build-arg WITH_CLAUDE=$claude -t "$IMAGE" .
+    claude=0 suvadu=0
+    for option in "${@:2}"; do
+      case "$option" in
+        --with-claude) claude=1 ;;
+        --with-suvadu) suvadu=1 ;;
+        *) echo "Unknown option $option (use --with-claude, --with-suvadu)" >&2; exit 1 ;;
+      esac
+    done
+    docker build --build-arg WITH_CLAUDE=$claude --build-arg WITH_SUVADU=$suvadu -t "$IMAGE" .
     docker rm -f "$NAME" >/dev/null 2>&1 || true
     # The volume keeps allowed keys across restarts.
     if ! docker run -d --name "$NAME" --hostname atlas \
@@ -79,7 +86,7 @@ case "${1:-}" in
     docker rm -f "$NAME" >/dev/null 2>&1 && echo "Stopped." || echo "Wasn't running."
     ;;
   *)
-    sed -n '2,10p' "$self" | sed 's/^# \{0,1\}//'
+    sed -n '2,11p' "$self" | sed 's/^# \{0,1\}//'
     exit 1
     ;;
 esac
