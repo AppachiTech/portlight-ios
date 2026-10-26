@@ -1,0 +1,10 @@
+
+# Demo prompt: user@host, the folder and the git branch, in colour.
+__demo_branch() {
+  local b
+  b=$(git symbolic-ref --short HEAD 2>/dev/null) && printf ' (%s)' "$b"
+}
+PS1='\[\e[1;32m\]\u@\h\[\e[0m\]:\[\e[1;34m\]\w\[\e[0;35m\]$(__demo_branch)\[\e[0m\]\$ '
+export LANG=C.UTF-8
+alias ll='ls -la'
+cd ~/shop-api 2>/dev/null || true
