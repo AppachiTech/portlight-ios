@@ -98,7 +98,7 @@ than a public issue.
 
 ## Build it
 
-You need a Mac with Xcode 16 or later, [XcodeGen](https://github.com/yonaskolb/XcodeGen),
+You need a Mac with Xcode 26 or later, [XcodeGen](https://github.com/yonaskolb/XcodeGen),
 and an iPhone or iPad on iOS 17 or later. A free Apple ID is enough.
 
 ```sh

@@ -9,6 +9,7 @@ cd "$(dirname "$0")/.."
 rm -rf build/Portlight.xcarchive build/Payload build/Portlight.ipa
 mkdir -p build
 
+# Package.resolved pins SwiftTerm's build plugin, so skip Xcode's trust prompt.
 archive() {
   xcodebuild archive \
     -project Portlight.xcodeproj \
@@ -17,6 +18,7 @@ archive() {
     -destination 'generic/platform=iOS' \
     -archivePath build/Portlight.xcarchive \
     -onlyUsePackageVersionsFromResolvedFile -disableAutomaticPackageResolution \
+    -skipPackagePluginValidation \
     CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
 }
 if command -v xcbeautify >/dev/null; then

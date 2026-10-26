@@ -2,7 +2,7 @@
 
 ## What you need
 
-- A Mac with **Xcode 16 or later**.
+- A Mac with **Xcode 26 or later**.
 - **XcodeGen**, to create the Xcode project from `project.yml`:
   `brew install xcodegen`.
 - An **Apple ID**. A free one works for your own phone. A paid developer

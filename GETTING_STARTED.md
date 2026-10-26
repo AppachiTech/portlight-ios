@@ -28,7 +28,7 @@ server, and keeping it running. It takes about 30 minutes the first time.
 
 | | |
 | --- | --- |
-| A Mac | With **Xcode 16 or later** from the Mac App Store. |
+| A Mac | With **Xcode 26 or later** from the Mac App Store, new enough for the iOS version on your phone. |
 | An iPhone or iPad | On **iOS 17 or later**, with a passcode set. Portlight won't open without one. |
 | An Apple ID | A **free** one works. A paid developer account ($99 a year) makes installs last a year instead of 7 days. |
 | A cable | For the first install. Later installs can go over Wi-Fi. |
@@ -237,6 +237,7 @@ Details are in [demo/server/README.md](demo/server/README.md).
 | --- | --- |
 | `xcodebuild` "requires Xcode, but active developer directory … is a command line tools instance" | `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` |
 | "You have not agreed to the Xcode license agreements" | `sudo xcodebuild -license accept` |
+| "… is using Swift tools version … but the installed version is …" | Xcode is too old for Portlight's packages. Update to Xcode 26 or later. |
 | "No account for team", or other signing errors | Check `Config/Signing.local.xcconfig`, then run `make open` again. |
 | "Failed to register bundle identifier" | Someone already uses it. Change `PORTLIGHT_BUNDLE_ID`. |
 | "Communication with Apple failed: your team has no devices" | Connect the phone and select it as the run destination; the warning clears. |

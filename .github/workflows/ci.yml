@@ -27,7 +27,10 @@ jobs:
 
   app-ios:
     name: App build (iOS, unsigned)
-    runs-on: macos-15
+    runs-on: macos-26
+    env:
+      # The oldest Xcode the docs promise: the locked packages need Swift 6.2.
+      DEVELOPER_DIR: /Applications/Xcode_26.0.1.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -41,10 +44,13 @@ jobs:
         run: swift test --force-resolved-versions
       - name: Generate project
         run: xcodegen generate
+      # SwiftTerm's build plugin can't be trusted by clicking in Xcode here;
+      # Package.resolved pins the exact revision it comes from.
       - name: Build
         run: |
           xcodebuild build \
             -project Portlight.xcodeproj -scheme Portlight \
             -destination 'generic/platform=iOS' \
             -onlyUsePackageVersionsFromResolvedFile -disableAutomaticPackageResolution \
+            -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO
