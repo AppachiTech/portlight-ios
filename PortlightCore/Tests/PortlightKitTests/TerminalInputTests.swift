@@ -115,7 +115,7 @@ import Testing
     }
 
     @Test func snippetPayload() {
-        #expect(Snippet(title: "t", command: "ls").payload == Array("ls\r".utf8))
-        #expect(Snippet(title: "t", command: "ls", runImmediately: false).payload == Array("ls".utf8))
+        #expect(Snippet(title: "t", command: "ls").input(allowRun: true) == SavedCommandInput(text: "ls", pressReturn: true))
+        #expect(Snippet(title: "t", command: "ls", runImmediately: false).input(allowRun: true).pressReturn == false)
     }
 }

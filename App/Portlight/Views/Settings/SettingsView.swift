@@ -43,7 +43,17 @@ struct SettingsView: View {
                         Text("Landscape").tag(TerminalOrientation.landscape)
                         Text("Portrait").tag(TerminalOrientation.portrait)
                     }
+                }
+
+                Section {
                     NavigationLink("Saved commands") { SnippetsView() }
+                    Toggle("Run straight away", isOn: $library.settings.runSavedCommands)
+                } header: {
+                    Text("Saved commands")
+                } footer: {
+                    Text(library.settings.runSavedCommands
+                         ? "Commands set to press Return run as soon as you pick them. Others are only typed."
+                         : "Picking a saved command types it into the terminal without running it; press Return when you're ready.")
                 }
 
                 Section {

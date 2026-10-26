@@ -115,6 +115,24 @@ final class TerminalController: NSObject, TerminalViewDelegate {
         _ = view.resignFirstResponder()
     }
 
+    /// Types text without running it. Several lines go in as a bracketed
+    /// paste where the program supports it, so none of them run; otherwise
+    /// the user confirms first, as with any multi-line paste.
+    func type(_ text: String) {
+        guard !text.isEmpty else { return }
+        let multiLine = text.contains("\n") || text.contains("\r")
+        if !multiLine {
+            MainActor.assumeIsolated { session.send(Array(text.utf8)) }
+        } else if view.getTerminal().bracketedPasteMode {
+            MainActor.assumeIsolated { session.send(Array(("\u{1B}[200~" + text + "\u{1B}[201~").utf8)) }
+        } else {
+            onConfirmPaste(text) { [weak self] ok in
+                guard ok, let self else { return }
+                MainActor.assumeIsolated { self.session.send(Array(text.utf8)) }
+            }
+        }
+    }
+
     /// Shows the latest output, e.g. after the keyboard changed the height.
     func scrollToBottom() {
         view.scroll(toPosition: 1)

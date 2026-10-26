@@ -86,8 +86,13 @@ struct SnippetEditor: View {
                 }
                 Section {
                     Toggle("Press Return after typing", isOn: $snippet.runImmediately)
+                        .disabled(!model.library.settings.runSavedCommands)
                 } footer: {
-                    Text("Leave this off for commands that change things, like terraform apply, so you can check before running.")
+                    if model.library.settings.runSavedCommands {
+                        Text("Leave this off for commands that change things, like terraform apply, so you can check before running.")
+                    } else {
+                        Text("Saved commands are only typed, never run, while Settings → Saved commands → Run straight away is off.")
+                    }
                 }
             }
             .navigationTitle(snippet.title.isEmpty ? "New saved command" : snippet.title)

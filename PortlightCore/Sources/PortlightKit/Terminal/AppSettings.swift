@@ -33,6 +33,9 @@ public struct AppSettings: Codable, Equatable, Sendable {
     /// Show the speak-to-type strip under the terminal.
     public var voiceInput: Bool = true
     public var terminalOrientation: TerminalOrientation = .automatic
+    /// Let saved commands press Return (each one's own switch decides).
+    /// Off: they're only typed, and you press Return.
+    public var runSavedCommands: Bool = false
 
     public static let fontSizeRange: ClosedRange<Double> = 8...28
 
@@ -68,16 +71,28 @@ public struct AppSettings: Codable, Equatable, Sendable {
         keepAliveInterval = try c.decodeIfPresent(Int.self, forKey: .keepAliveInterval) ?? d.keepAliveInterval
         voiceInput = try c.decodeIfPresent(Bool.self, forKey: .voiceInput) ?? d.voiceInput
         terminalOrientation = (try? c.decodeIfPresent(TerminalOrientation.self, forKey: .terminalOrientation)) ?? d.terminalOrientation
+        runSavedCommands = try c.decodeIfPresent(Bool.self, forKey: .runSavedCommands) ?? d.runSavedCommands
         fontSize = min(max(fontSize, Self.fontSizeRange.lowerBound), Self.fontSizeRange.upperBound)
     }
 }
 
-/// A saved command for the key bar's snippets list.
+/// The keystrokes for a saved command.
+public struct SavedCommandInput: Equatable, Sendable {
+    public var text: String
+    public var pressReturn: Bool
+
+    public init(text: String, pressReturn: Bool) {
+        self.text = text
+        self.pressReturn = pressReturn
+    }
+}
+
+/// A saved command for the key bar's saved commands list.
 public struct Snippet: Codable, Identifiable, Hashable, Sendable {
     public var id: UUID
     public var title: String
     public var command: String
-    /// Press return after typing it.
+    /// Press Return after typing it, when saved commands may run.
     public var runImmediately: Bool
 
     public init(id: UUID = UUID(), title: String, command: String, runImmediately: Bool = true) {
@@ -87,9 +102,11 @@ public struct Snippet: Codable, Identifiable, Hashable, Sendable {
         self.runImmediately = runImmediately
     }
 
-    /// The bytes to send to the shell.
-    public var payload: [UInt8] {
-        Array(command.utf8) + (runImmediately ? [0x0D] : [])
+    /// What to type, and whether to press Return after. Trailing line
+    /// breaks are dropped so a stored newline can't run the command.
+    public func input(allowRun: Bool) -> SavedCommandInput {
+        let text = String(command.reversed().drop(while: { $0.isNewline }).reversed())
+        return SavedCommandInput(text: text, pressReturn: allowRun && runImmediately)
     }
 
     public static let starters: [Snippet] = [

@@ -64,3 +64,29 @@ import Testing
         #expect(DictatedText.bytes(for: "\n\n").isEmpty)
     }
 }
+
+@Suite struct SavedCommandInputTests {
+    @Test func savedCommandsAreTypedNotRunByDefault() throws {
+        #expect(AppSettings().runSavedCommands == false)
+        let old = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"themeName":"Nord"}"#.utf8))
+        #expect(old.runSavedCommands == false)
+        var on = AppSettings()
+        on.runSavedCommands = true
+        #expect(try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(on)).runSavedCommands)
+    }
+
+    @Test func inputPressesReturnOnlyWhenAllowedAndWanted() {
+        let status = Snippet(title: "s", command: "git status")
+        #expect(status.input(allowRun: false) == SavedCommandInput(text: "git status", pressReturn: false))
+        #expect(status.input(allowRun: true) == SavedCommandInput(text: "git status", pressReturn: true))
+        let apply = Snippet(title: "a", command: "terraform apply", runImmediately: false)
+        #expect(apply.input(allowRun: true).pressReturn == false)
+    }
+
+    @Test func trailingLineBreaksAreNotTyped() {
+        // A stored trailing newline would otherwise run the command.
+        let snippet = Snippet(title: "s", command: "ls -la\n\r\n")
+        #expect(snippet.input(allowRun: false).text == "ls -la")
+        #expect(Snippet(title: "m", command: "cd /srv\nls\n").input(allowRun: false).text == "cd /srv\nls")
+    }
+}

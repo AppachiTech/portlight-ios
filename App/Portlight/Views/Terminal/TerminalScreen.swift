@@ -259,7 +259,13 @@ struct TerminalPane: View {
         }
         .sheet(isPresented: $showingSnippets) {
             SnippetPicker { snippet in
-                session.send(snippet.payload)
+                let input = snippet.input(allowRun: model.library.settings.runSavedCommands)
+                let controller = model.terminal(for: session)
+                if input.pressReturn {
+                    controller.session.send(Array((input.text + "\r").utf8))
+                } else {
+                    controller.type(input.text)
+                }
             }
             .presentationDetents([.medium, .large])
         }
