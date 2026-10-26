@@ -6,13 +6,14 @@ struct TerminalScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @State private var keyboard = KeyboardInset()
 
     var body: some View {
         let theme = TerminalTheme.named(model.library.settings.themeName)
         VStack(spacing: 0) {
             SessionTabBar(compact: verticalSizeClass == .compact) { dismiss() }
             if let session = model.sessions.active {
-                TerminalPane(session: session)
+                TerminalPane(session: session, keyboardHeight: keyboard.height)
                     .id(session.id)
             } else {
                 Spacer()
@@ -27,6 +28,10 @@ struct TerminalScreen: View {
                 Spacer()
             }
         }
+        // Make room for the keyboard ourselves, so the terminal shrinks to
+        // the space above it rather than running underneath.
+        .padding(.bottom, keyboard.height)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .background(SwiftUI.Color(theme.background).ignoresSafeArea())
         .preferredColorScheme(theme.isDark ? .dark : .light)
         .statusBarHidden(verticalSizeClass == .compact)
@@ -138,18 +143,8 @@ struct TerminalViewControls: View {
                     Label("Orientation", systemImage: "rectangle.landscape.rotate")
                 }
                 .pickerStyle(.menu)
-                Section("Voice input in landscape") {
-                    Toggle(isOn: $library.settings.voiceInput) {
-                        Label("Speak to type", systemImage: "mic")
-                    }
-                    Picker(selection: $library.settings.voiceInputLayout) {
-                        Label("Side panel", systemImage: "rectangle.righthalf.filled").tag(VoiceInputLayout.sidePanel)
-                        Label("Bottom strip", systemImage: "rectangle.bottomthird.inset.filled").tag(VoiceInputLayout.bottomStrip)
-                    } label: {
-                        Label("Layout", systemImage: "rectangle.split.2x1")
-                    }
-                    .pickerStyle(.menu)
-                    .disabled(!library.settings.voiceInput)
+                Toggle(isOn: $library.settings.voiceInput) {
+                    Label("Speak to type", systemImage: "mic")
                 }
                 Picker(selection: $library.settings.themeName) {
                     ForEach(TerminalTheme.all) { theme in
@@ -212,41 +207,47 @@ struct SessionChip: View {
 /// One session's terminal plus its status banner and prompts.
 struct TerminalPane: View {
     let session: TerminalSession
+    /// How much the keyboard covers; the terminal re-scrolls when it changes.
+    var keyboardHeight: CGFloat = 0
     @Environment(AppModel.self) private var model
     @State private var showingSnippets = false
     @State private var pendingPaste: PendingPaste?
     /// The voice input draft; kept here so it survives turning the phone.
     @State private var voiceDraft = ""
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    /// Whether the terminal has the keyboard. Voice input steps aside while
+    /// you type, and comes back when the keyboard goes down.
+    @State private var terminalFocused = false
 
     var body: some View {
         let settings = model.library.settings
         let controller = model.terminal(for: session)
-        let showVoice = settings.voiceInput && verticalSizeClass == .compact
-        // AnyLayout keeps the terminal's identity when the panel moves.
-        let layout = showVoice && settings.voiceInputLayout == .sidePanel
-            ? AnyLayout(HStackLayout(spacing: 0)) : AnyLayout(VStackLayout(spacing: 0))
-        layout {
+        VStack(spacing: 0) {
             ZStack(alignment: .bottom) {
                 TerminalViewRepresentable(
                     controller: controller,
                     settings: settings,
-                    autoFocus: !showVoice,
+                    autoFocus: !settings.voiceInput,
                     onSnippets: { showingSnippets = true },
                     onFontSizeChange: { model.library.settings.fontSize = $0 },
-                    onConfirmPaste: { text, answer in pendingPaste = PendingPaste(text: text, answer: answer) })
+                    onConfirmPaste: { text, answer in pendingPaste = PendingPaste(text: text, answer: answer) },
+                    onFocusChange: { terminalFocused = $0 })
                 SessionStatusBanner(session: session) {
                     model.close(session)
                 }
                 .padding(12)
             }
-            if showVoice {
-                VoiceInputView(layout: settings.voiceInputLayout, controller: controller, draft: $voiceDraft)
+            if settings.voiceInput && !terminalFocused {
+                VoiceInputView(controller: controller, draft: $voiceDraft) {
+                    showingSnippets = true
+                }
             }
         }
-        .onChange(of: showVoice) { _, shown in
-            // Voice input replaces the keyboard; ⌨︎ brings it back.
-            if shown { controller.unfocus() }
+        .onAppear { terminalFocused = controller.view.isFirstResponder }
+        .onChange(of: keyboardHeight) {
+            // Once the resize has settled, show the latest lines again.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                controller.scrollToBottom()
+            }
         }
         .sheet(item: Binding(get: { session.hostKeyPrompt }, set: { _ in })) { prompt in
             HostKeyPromptView(prompt: prompt)

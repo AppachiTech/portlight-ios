@@ -43,20 +43,15 @@ struct SettingsView: View {
                         Text("Landscape").tag(TerminalOrientation.landscape)
                         Text("Portrait").tag(TerminalOrientation.portrait)
                     }
-                    NavigationLink("Snippets") { SnippetsView() }
+                    NavigationLink("Saved commands") { SnippetsView() }
                 }
 
                 Section {
-                    Toggle("Speak to type in landscape", isOn: $library.settings.voiceInput)
-                    Picker("Layout", selection: $library.settings.voiceInputLayout) {
-                        Text("Side panel").tag(VoiceInputLayout.sidePanel)
-                        Text("Bottom strip").tag(VoiceInputLayout.bottomStrip)
-                    }
-                    .disabled(!library.settings.voiceInput)
+                    Toggle("Speak to type", isOn: $library.settings.voiceInput)
                 } header: {
                     Text("Voice input")
                 } footer: {
-                    Text("In landscape the keyboard stays down and a panel takes speech instead. What you say lands in a draft you can edit; Insert types it into the terminal without pressing Return. Speech is recognised on this iPhone and audio never leaves it.")
+                    Text("A strip under the terminal takes speech, and the keyboard stays down until you ask for it. What you say lands in a draft, in lower case, that you can edit; Insert types it into the terminal without pressing Return. Speech is recognised on this iPhone and audio never leaves it.")
                 }
 
                 Section {

@@ -6,18 +6,16 @@ import Testing
     @Test func newSettingsHaveDefaults() throws {
         let settings = AppSettings()
         #expect(settings.voiceInput)
-        #expect(settings.voiceInputLayout == .sidePanel)
         #expect(settings.terminalOrientation == .automatic)
 
         // Settings files written before these fields existed still load.
         let old = try JSONDecoder().decode(AppSettings.self, from: Data(#"{"themeName":"Nord"}"#.utf8))
-        #expect(old.voiceInput && old.voiceInputLayout == .sidePanel && old.terminalOrientation == .automatic)
+        #expect(old.voiceInput && old.terminalOrientation == .automatic)
     }
 
     @Test func unknownLayoutAndOrientationFallBack() throws {
         let json = #"{"voiceInputLayout":"floating","terminalOrientation":"sideways","voiceInput":false}"#
         let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
-        #expect(settings.voiceInputLayout == .sidePanel)
         #expect(settings.terminalOrientation == .automatic)
         #expect(settings.voiceInput == false)
     }
@@ -25,7 +23,6 @@ import Testing
     @Test func layoutSettingsRoundTrip() throws {
         var settings = AppSettings()
         settings.voiceInput = false
-        settings.voiceInputLayout = .bottomStrip
         settings.terminalOrientation = .landscape
         let decoded = try JSONDecoder().decode(AppSettings.self, from: JSONEncoder().encode(settings))
         #expect(decoded == settings)

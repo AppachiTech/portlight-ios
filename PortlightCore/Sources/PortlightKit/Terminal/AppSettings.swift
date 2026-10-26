@@ -4,14 +4,6 @@ public enum CursorStyle: String, Codable, CaseIterable, Sendable {
     case block, underline, bar
 }
 
-/// Where the voice input controls sit next to a landscape terminal.
-public enum VoiceInputLayout: String, Codable, CaseIterable, Sendable {
-    /// A column beside the terminal, always showing the draft.
-    case sidePanel
-    /// One row under the terminal, so it keeps the full width.
-    case bottomStrip
-}
-
 /// Which way the terminal screen faces.
 public enum TerminalOrientation: String, Codable, CaseIterable, Sendable {
     /// Follows the phone.
@@ -38,9 +30,8 @@ public struct AppSettings: Codable, Equatable, Sendable {
     public var keyBar: [KeyBarItem] = KeyBarItem.defaultLayout
     /// Seconds between keepalive probes on idle connections; 0 disables.
     public var keepAliveInterval: Int = 30
-    /// Show the speak-to-type controls next to the terminal in landscape.
+    /// Show the speak-to-type strip under the terminal.
     public var voiceInput: Bool = true
-    public var voiceInputLayout: VoiceInputLayout = .sidePanel
     public var terminalOrientation: TerminalOrientation = .automatic
 
     public static let fontSizeRange: ClosedRange<Double> = 8...28
@@ -76,7 +67,6 @@ public struct AppSettings: Codable, Equatable, Sendable {
         keyBar = (try? c.decodeIfPresent([KeyBarItem].self, forKey: .keyBar)) ?? d.keyBar
         keepAliveInterval = try c.decodeIfPresent(Int.self, forKey: .keepAliveInterval) ?? d.keepAliveInterval
         voiceInput = try c.decodeIfPresent(Bool.self, forKey: .voiceInput) ?? d.voiceInput
-        voiceInputLayout = (try? c.decodeIfPresent(VoiceInputLayout.self, forKey: .voiceInputLayout)) ?? d.voiceInputLayout
         terminalOrientation = (try? c.decodeIfPresent(TerminalOrientation.self, forKey: .terminalOrientation)) ?? d.terminalOrientation
         fontSize = min(max(fontSize, Self.fontSizeRange.lowerBound), Self.fontSizeRange.upperBound)
     }

@@ -8,6 +8,20 @@ import UIKit
 final class PortlightTerminalView: TerminalView {
     /// Asks the user before pasting text that would run several lines.
     var confirmPaste: ((String, @escaping (Bool) -> Void) -> Void)?
+    /// Told when the terminal gains or loses the keyboard.
+    var onFocusChange: ((Bool) -> Void)?
+
+    override func becomeFirstResponder() -> Bool {
+        let became = super.becomeFirstResponder()
+        if became { onFocusChange?(true) }
+        return became
+    }
+
+    override func resignFirstResponder() -> Bool {
+        let resigned = super.resignFirstResponder()
+        if resigned { onFocusChange?(false) }
+        return resigned
+    }
 
     override func copy(_ sender: Any?) {
         if let text = getSelection(), !text.isEmpty {
@@ -99,6 +113,11 @@ final class TerminalController: NSObject, TerminalViewDelegate {
 
     func unfocus() {
         _ = view.resignFirstResponder()
+    }
+
+    /// Shows the latest output, e.g. after the keyboard changed the height.
+    func scrollToBottom() {
+        view.scroll(toPosition: 1)
     }
 
     /// The font size that shows `columns` characters across the view now.
@@ -253,6 +272,7 @@ struct TerminalViewRepresentable: UIViewRepresentable {
     var onSnippets: () -> Void
     var onFontSizeChange: (Double) -> Void
     var onConfirmPaste: (String, @escaping (Bool) -> Void) -> Void
+    var onFocusChange: (Bool) -> Void = { _ in }
 
     func makeUIView(context: Context) -> PortlightTerminalView {
         update()
@@ -275,5 +295,6 @@ struct TerminalViewRepresentable: UIViewRepresentable {
         controller.onSnippets = onSnippets
         controller.onFontSizeChange = onFontSizeChange
         controller.onConfirmPaste = onConfirmPaste
+        controller.view.onFocusChange = onFocusChange
     }
 }
