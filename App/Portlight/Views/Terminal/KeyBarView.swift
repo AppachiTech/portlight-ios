@@ -140,7 +140,7 @@ final class KeyBarView: UIInputView {
         switch item {
         case .ctrl: "Control"
         case .alt: "Alt"
-        case .snippets: "Snippets"
+        case .snippets: "Saved commands"
         case .keyboard: "Toggle keyboard"
         case .key(let key):
             switch key {

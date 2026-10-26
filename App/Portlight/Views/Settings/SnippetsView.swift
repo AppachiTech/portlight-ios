@@ -11,10 +11,7 @@ struct SnippetsView: View {
                 Button {
                     editing = snippet
                 } label: {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(snippet.title).foregroundStyle(.primary)
-                        Text(snippet.command).font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(2)
-                    }
+                    SavedCommandRow(snippet: snippet)
                 }
             }
             .onDelete { offsets in
@@ -24,19 +21,40 @@ struct SnippetsView: View {
                 model.library.moveSnippets(from: source, to: destination)
             }
         }
-        .navigationTitle("Snippets")
+        .navigationTitle("Saved commands")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) { EditButton() }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     editing = Snippet(title: "", command: "")
                 } label: {
-                    Label("Add snippet", systemImage: "plus")
+                    Label("Add saved command", systemImage: "plus")
                 }
             }
         }
         .sheet(item: $editing) { snippet in
             SnippetEditor(snippet: snippet)
+        }
+    }
+}
+
+/// A saved command's title and command, flagged if it holds a secret
+/// (possible for ones saved before the check existed).
+struct SavedCommandRow: View {
+    let snippet: Snippet
+
+    var body: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(snippet.title).foregroundStyle(.primary)
+                Text(snippet.command).font(.caption.monospaced()).foregroundStyle(.secondary).lineLimit(2)
+            }
+            if !CommandSecrets.problems(in: snippet.command).isEmpty {
+                Spacer(minLength: 0)
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                    .accessibilityLabel("Contains a secret")
+            }
         }
     }
 }
@@ -47,17 +65,32 @@ struct SnippetEditor: View {
     @State var snippet: Snippet
 
     var body: some View {
+        let problems = CommandSecrets.problems(in: snippet.command)
         NavigationStack {
             Form {
-                TextField("Title", text: $snippet.title)
-                TextField("Command", text: $snippet.command, axis: .vertical)
-                    .font(.body.monospaced())
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .lineLimit(1...6)
-                Toggle("Press Return after typing", isOn: $snippet.runImmediately)
+                Section {
+                    TextField("Title", text: $snippet.title)
+                    TextField("Command", text: $snippet.command, axis: .vertical)
+                        .font(.body.monospaced())
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .lineLimit(1...6)
+                } footer: {
+                    if problems.isEmpty {
+                        Text("Keep saved commands generic, like git status or terraform apply. They're stored as plain text, so passwords, keys and tokens can't be saved here.")
+                    } else {
+                        Label("This looks like it contains \(problems.formatted(.list(type: .and))). Saved commands are stored as plain text, so secrets can't be saved. Refer to them instead, for example $TOKEN, or read them from a file.",
+                              systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                    }
+                }
+                Section {
+                    Toggle("Press Return after typing", isOn: $snippet.runImmediately)
+                } footer: {
+                    Text("Leave this off for commands that change things, like terraform apply, so you can check before running.")
+                }
             }
-            .navigationTitle(snippet.title.isEmpty ? "New snippet" : snippet.title)
+            .navigationTitle(snippet.title.isEmpty ? "New saved command" : snippet.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
@@ -69,7 +102,7 @@ struct SnippetEditor: View {
                         model.library.save(snippet)
                         dismiss()
                     }
-                    .disabled(snippet.command.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(snippet.command.trimmingCharacters(in: .whitespaces).isEmpty || !problems.isEmpty)
                 }
             }
         }

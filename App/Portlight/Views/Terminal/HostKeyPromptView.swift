@@ -164,13 +164,14 @@ struct PasswordPromptView: View {
 struct SnippetPicker: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
+    @State private var adding: Snippet?
     var onPick: (Snippet) -> Void
 
     var body: some View {
         NavigationStack {
             List {
                 if model.library.snippets.isEmpty {
-                    Text("No snippets yet. Add them in Settings → Snippets.")
+                    Text("No saved commands yet. Tap + to add one.")
                         .foregroundStyle(.secondary)
                 }
                 ForEach(model.library.snippets) { snippet in
@@ -178,22 +179,26 @@ struct SnippetPicker: View {
                         onPick(snippet)
                         dismiss()
                     } label: {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(snippet.title).foregroundStyle(.primary)
-                            Text(snippet.command)
-                                .font(.caption.monospaced())
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                        }
+                        SavedCommandRow(snippet: snippet)
                     }
                 }
             }
-            .navigationTitle("Snippets")
+            .navigationTitle("Saved commands")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        adding = Snippet(title: "", command: "")
+                    } label: {
+                        Label("Add saved command", systemImage: "plus")
+                    }
+                }
+            }
+            .sheet(item: $adding) { snippet in
+                SnippetEditor(snippet: snippet)
             }
         }
     }
