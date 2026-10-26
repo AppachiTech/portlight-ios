@@ -1,6 +1,6 @@
 # Portlight
 
-[![CI](https://github.com/MadhuAppachi/portlight/actions/workflows/ci.yml/badge.svg)](https://github.com/MadhuAppachi/portlight/actions/workflows/ci.yml)
+[![CI](https://github.com/AppachiTech/portlight-ios/actions/workflows/ci.yml/badge.svg)](https://github.com/AppachiTech/portlight-ios/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 An open-source SSH terminal for iPhone and iPad, made for reaching cloud
@@ -60,7 +60,7 @@ You need a Mac with Xcode 16 or later, [XcodeGen](https://github.com/yonaskolb/X
 and an iPhone or iPad on iOS 17 or later. A free Apple ID is enough.
 
 ```sh
-git clone https://github.com/MadhuAppachi/portlight.git
+git clone https://github.com/AppachiTech/portlight-ios.git
 cd portlight-ios
 brew install xcodegen
 make open          # generates Portlight.xcodeproj and opens it

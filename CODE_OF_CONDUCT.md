@@ -11,8 +11,8 @@ repository or anywhere you represent the project.
 ## Reporting
 
 If someone's behaviour concerns you, contact the maintainers privately
-through the contact details on the repository owner's GitHub profile.
-Reports are handled confidentially. Maintainers may remove, edit or reject
+through the contact details on the [AppachiTech](https://github.com/AppachiTech)
+GitHub organization profile. Reports are handled confidentially. Maintainers may remove, edit or reject
 comments, commits, code, issues and other contributions that don't follow
 this code, and may restrict or ban participants, following the
 [enforcement guidelines](https://www.contributor-covenant.org/version/2/1/code_of_conduct/#enforcement-guidelines)

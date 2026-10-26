@@ -22,7 +22,7 @@ installing:
 1. Check the checksum: `shasum -a 256 Portlight.ipa` must match
    `Portlight.ipa.sha256`.
 2. Check it was built by this repository's release workflow, with the
-   [GitHub CLI](https://cli.github.com): `gh attestation verify Portlight.ipa --repo MadhuAppachi/portlight`.
+   [GitHub CLI](https://cli.github.com): `gh attestation verify Portlight.ipa --repo AppachiTech/portlight-ios`.
    The checksum only catches a damaged download; the attestation shows
    the file came from the workflow, unchanged.
 3. Sign and install it with your own Apple ID using an open-source

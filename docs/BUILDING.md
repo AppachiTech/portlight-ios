@@ -12,7 +12,7 @@
 ## First build
 
 ```sh
-git clone https://github.com/MadhuAppachi/portlight.git portlight
+git clone https://github.com/AppachiTech/portlight-ios.git portlight-ios
 cd portlight-ios
 make open
 ```
