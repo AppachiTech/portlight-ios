@@ -2,14 +2,15 @@
 # Runs the demo SSH server (see Dockerfile) on this Mac, reachable from a
 # phone on the same Wi-Fi.
 #
-#   demo-server.sh up [--with-claude]   build and start it
+#   demo-server.sh up [--with-claude]   build and start it (PORT=2223 … for another port)
 #   demo-server.sh key 'ssh-ed25519 …'  allow a public key (from Portlight)
 #   demo-server.sh status               show how to connect
 #   demo-server.sh down                 stop and remove it
 #
 # Key login only. Stop it when you're done recording.
 set -euo pipefail
-cd "$(dirname "$0")"
+self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
+cd "$(dirname "$self")"
 
 NAME=portlight-demo
 IMAGE=portlight-demo
@@ -24,19 +25,21 @@ status() {
     echo "Not running. Start it with: $0 up"
     return
   fi
-  local keys
+  local keys port
+  # The port it was started with, which may differ from $PORT now.
+  port=$(docker port "$NAME" 22/tcp | head -1 | sed 's/.*://')
   keys=$(docker exec "$NAME" sh -c 'grep -c . /home/dev/.ssh/authorized_keys 2>/dev/null; true' | head -1)
   keys=${keys:-0}
   cat <<EOF
 Demo server is running.
 
   Host:      $(lan_ip)
-  Port:      $PORT
+  Port:      $port
   Username:  dev
   Log in with a key: $keys allowed so far.
 
 Host key fingerprints, to compare with what Portlight shows:
-$(docker exec "$NAME" sh -c 'for f in /etc/ssh/ssh_host_ed25519_key.pub /etc/ssh/ssh_host_ecdsa_key.pub; do ssh-keygen -lf "$f"; done' | sed 's/^/  /')
+$(docker exec "$NAME" sh -c 'for f in /etc/ssh/ssh_host_ed25519_key.pub /etc/ssh/ssh_host_ecdsa_key.pub; do ssh-keygen -lf "$f"; done' | awk '{print "  " $2 " " $NF}')
 EOF
 }
 
@@ -47,8 +50,12 @@ case "${1:-}" in
     docker build --build-arg WITH_CLAUDE=$claude -t "$IMAGE" .
     docker rm -f "$NAME" >/dev/null 2>&1 || true
     # The volume keeps allowed keys across restarts.
-    docker run -d --name "$NAME" --hostname atlas \
-      -p "$PORT:22" -v portlight-demo-keys:/home/dev/.ssh "$IMAGE" >/dev/null
+    if ! docker run -d --name "$NAME" --hostname atlas \
+      -p "$PORT:22" -v portlight-demo-keys:/home/dev/.ssh "$IMAGE" >/dev/null; then
+      docker rm -f "$NAME" >/dev/null 2>&1 || true
+      echo "Couldn't start it. If port $PORT is already in use, pick another: PORT=2223 $0 up" >&2
+      exit 1
+    fi
     docker exec "$NAME" sh -c 'touch /home/dev/.ssh/authorized_keys && chown -R dev:dev /home/dev/.ssh && chmod 700 /home/dev/.ssh && chmod 600 /home/dev/.ssh/authorized_keys'
     status
     echo
@@ -72,7 +79,7 @@ case "${1:-}" in
     docker rm -f "$NAME" >/dev/null 2>&1 && echo "Stopped." || echo "Wasn't running."
     ;;
   *)
-    sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,10p' "$self" | sed 's/^# \{0,1\}//'
     exit 1
     ;;
 esac

@@ -23,6 +23,9 @@ demo/server/demo-server.sh up            # build and start; prints host, port, f
    `dev`, log in with that key. Connect, check the fingerprint matches, and
    trust it.
 
+It listens on port 2222. If that's taken, start it on another one with
+`PORT=2223 demo/server/demo-server.sh up`.
+
 Stop it when you're done:
 
 ```sh
