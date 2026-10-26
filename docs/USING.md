@@ -58,10 +58,34 @@ server through it, and asks about each one's host key the first time.
     them, and once more to release.
   - Arrows and delete repeat while held.
   - **{ }** opens your snippets.
-- **Pinch** to change the font size.
+- **Text size.** The **A−** and **A+** buttons in the tab bar change it a
+  point at a time, or pinch. **⋯ → Fit 80 columns** picks the size that shows
+  80 characters across, handy for output that wraps in portrait.
+- **Rotate.** The rotate button in the tab bar turns the terminal to
+  landscape or back, even with the phone's rotation lock on. **⋯ →
+  Orientation** can also make it follow the phone. Leaving the terminal
+  always goes back to following the phone.
 - **Long-press** to select. Copy keeps the text on this phone for two
   minutes.
 - **Rotate** for a wider terminal. The server is told the new size.
+
+### Speak to type (landscape)
+
+In landscape the keyboard stays down and a voice panel takes its place:
+a side panel by default, or a strip under the terminal (**⋯ → Layout**, or
+**Settings → Voice input**).
+
+1. Tap **Speak** and say what to type, then **Stop**. The words land in the
+   draft.
+2. Edit the draft by tapping into it, tap **Clear** to start over, or tap
+   **Speak** again to add more.
+3. Tap **Insert** to type it into the terminal. It never presses Return, so
+   you can check it first, then tap **⏎**.
+
+It's made for talking to tools like Claude Code: say the instruction in
+plain English, check it, send it. The panel also has Esc, Ctrl-C, Tab, ↑, ↓
+and **⌨︎** for the full keyboard. Speech is recognised on the iPhone itself;
+the first time, iOS asks for the microphone and speech recognition.
 - **Tabs.** The strip at the top lists open sessions. **⌄** goes back to your
   hosts while sessions stay open.
 - When a session ends or drops, tap **Reconnect**.

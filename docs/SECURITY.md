@@ -17,6 +17,7 @@ and where the limits are.
 | A keylogging keyboard | Third-party keyboard extensions are refused app-wide, so keystrokes, including passwords at `sudo` prompts, never pass through one. |
 | Clipboard leaks | Text copied from a terminal, and text a server sets via OSC 52, is local-only (no Universal Clipboard) and expires after two minutes. Servers can never read your clipboard. |
 | Pasting something that runs commands | A multi-line paste into a shell without bracketed-paste mode asks first and shows the lines. |
+| Voice input running something, or leaking | Inserted speech never presses Return: line breaks become spaces and control characters are dropped. Speech is recognised on the device only; where that isn't available Portlight says so rather than sending audio to Apple's servers. The microphone is only on between Speak and Stop, and stops when the app leaves the foreground. |
 | Malicious links in output | Only `http` and `https` links open, never other URL schemes. |
 | Shoulder-surfing in the app switcher | A privacy cover replaces the app's snapshot whenever it isn't active. |
 | Exported keys | Private key exports are always encrypted (OpenSSH format, aes256-ctr with bcrypt-pbkdf, 16 rounds). The passphrase must be at least 8 characters. Secure Enclave keys can't be exported at all. |

@@ -11,8 +11,12 @@ or install a build you signed. See [docs/INSTALL.md](docs/INSTALL.md).
 ## Features
 
 - **A real terminal.** xterm-256color, via [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm).
-  vim, tmux, htop and friends work. Portrait and landscape, pinch to zoom,
-  seven themes.
+  vim, tmux, htop and friends work. Portrait and landscape (forced from the
+  tab bar, even with rotation lock on), A−/A+ and pinch to zoom, fit 80
+  columns, seven themes.
+- **Speak to type.** In landscape the keyboard stays down and a voice panel
+  takes its place. Speech lands in a draft you can edit, then Insert types
+  it without pressing Return. Recognised on the phone; audio never leaves it.
 - **Keys the phone lacks.** A scrolling bar above the keyboard has Esc,
   sticky Ctrl and Alt (tap twice to lock), Tab, arrows that auto-repeat,
   shell symbols, F1–F12 and saved snippets.
