@@ -1,5 +1,8 @@
 # Portlight
 
+[![CI](https://github.com/MadhuAppachi/portlight/actions/workflows/ci.yml/badge.svg)](https://github.com/MadhuAppachi/portlight/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 An open-source SSH terminal for iPhone and iPad, made for reaching cloud
 servers (AWS, Google Cloud, Azure, DigitalOcean, or anything that speaks SSH)
 from your phone. It's an SSH client only: your tools, including the aws and
@@ -7,6 +10,10 @@ gcloud CLIs, run on the servers you connect to.
 
 Portlight isn't on the App Store. You build it yourself from this repository,
 or install a build you signed. See [docs/INSTALL.md](docs/INSTALL.md).
+
+> **Status:** early and actively developed. The core SSH and crypto code is
+> well tested, but Portlight hasn't had an external security audit. Read
+> [docs/SECURITY.md](docs/SECURITY.md) for what it protects and its limits.
 
 ## Features
 
@@ -43,18 +50,33 @@ authenticate. Host keys are checked on every connection. Third-party
 keyboards are blocked, terminal copies expire, and servers can't read your
 clipboard. There are no accounts, analytics or tracking.
 
-Details and limits are in [docs/SECURITY.md](docs/SECURITY.md).
+Details and limits are in [docs/SECURITY.md](docs/SECURITY.md). To report a
+vulnerability, use **Security → Report a vulnerability** on GitHub rather
+than a public issue.
 
 ## Build it
 
-You need a Mac with Xcode 16 or later and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+You need a Mac with Xcode 16 or later, [XcodeGen](https://github.com/yonaskolb/XcodeGen),
+and an iPhone or iPad on iOS 17 or later. A free Apple ID is enough.
 
 ```sh
+git clone https://github.com/MadhuAppachi/portlight.git
+cd portlight-ios
 brew install xcodegen
 make open          # generates Portlight.xcodeproj and opens it
 ```
 
 Pick your iPhone and press Run. Signing setup is in [docs/BUILDING.md](docs/BUILDING.md).
+
+## Documentation
+
+| Guide | For |
+| --- | --- |
+| [docs/BUILDING.md](docs/BUILDING.md) | Building, signing, running on your phone, troubleshooting |
+| [docs/INSTALL.md](docs/INSTALL.md) | Other ways to install, including signing a release build |
+| [docs/USING.md](docs/USING.md) | Adding servers, keys, the terminal, voice input, saved commands |
+| [docs/SECURITY.md](docs/SECURITY.md) | What Portlight protects against, and its limits |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the code fits together |
 
 ## Layout
 
@@ -81,7 +103,14 @@ throwaway OpenSSH server on 127.0.0.1: every key type, host key checks,
 PTY size and resize, Ctrl-C, jump hosts and session handling. Those
 server tests run when `sshd` is installed, and are skipped otherwise.
 
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. See
+[CONTRIBUTING.md](CONTRIBUTING.md), and please follow the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## License
 
 MIT. See [LICENSE](LICENSE). Portlight builds on SwiftNIO SSH, SwiftNIO and
-swift-crypto (Apache 2.0, Apple) and SwiftTerm (MIT, Miguel de Icaza).
+Swift Crypto (Apache 2.0, Apple) and SwiftTerm (MIT, Miguel de Icaza); the
+full list is in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).

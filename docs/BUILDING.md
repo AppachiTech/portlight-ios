@@ -12,7 +12,7 @@
 ## First build
 
 ```sh
-git clone <this repository> portlight-ios
+git clone https://github.com/MadhuAppachi/portlight.git portlight
 cd portlight-ios
 make open
 ```
@@ -20,6 +20,15 @@ make open
 `make open` runs `xcodegen generate` and opens `Portlight.xcodeproj`. Xcode
 then downloads the Swift packages. The project file isn't committed;
 regenerate it whenever `project.yml` changes.
+
+The first build may stop twice for one-time Xcode prompts:
+
+- **"Plugin SwiftTermBuildInfoPlugin must be enabled".** Click the error
+  and choose **Trust & Enable**. SwiftTerm uses this small build plugin.
+- **"The Metal Toolchain was not installed".** SwiftTerm includes Metal
+  shaders, and recent Xcode versions download the Metal compiler
+  separately: **Xcode → Settings → Components → Metal Toolchain → Get**, or
+  `xcodebuild -downloadComponent MetalToolchain`. It's about 800 MB.
 
 ### Signing
 
@@ -75,10 +84,18 @@ target).
   another `PORTLIGHT_BUNDLE_ID`.
 - **Package resolution fails.** Use **File → Packages → Reset Package
   Caches**, then build again.
-- **A compile error in the app.** The app code was written without access
-  to Xcode, so the first build may surface a small fix. The core package,
-  where the protocol and crypto work lives, is fully built and tested. Open
-  an issue or fix it and send a pull request.
+- **"xcodebuild requires Xcode, but active developer directory … is a
+  command line tools instance".** Point the tools at Xcode:
+  `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`.
+- **"You have not agreed to the Xcode license agreements".** Run
+  `sudo xcodebuild -license accept`.
+- **The Metal Toolchain download sits at "Preparing to download".** Quit
+  Xcode, run `sudo killall mobileassetd` (the service that downloads
+  components), and try again. If it's still stuck, restart the Mac.
+- **"Untrusted Developer" on the phone.** Go to **Settings → General → VPN
+  & Device Management**, pick your Apple ID and tap Trust.
+- **Something else.** Open an issue with the error text, or fix it and
+  send a pull request.
 
 ## Regenerating generated files
 
