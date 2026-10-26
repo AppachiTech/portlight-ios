@@ -127,6 +127,26 @@ import Testing
         #expect(result.warnings.contains { $0.contains("Include") })
     }
 
+    @Test func skippedSettingsAreReported() {
+        let config = """
+        Host legacy
+          HostName 10.0.0.5
+          ProxyCommand ssh -W %h:%p gateway
+          ForwardAgent yes
+          LocalForward 8080 localhost:80
+        Host deep
+          HostName 10.0.0.6
+          ProxyJump admin@first:2222,second
+        """
+        let result = SSHConfigParser.parse(config)
+        let legacy = result.warnings.first { $0.hasPrefix("legacy:") } ?? ""
+        #expect(legacy.contains("ProxyCommand") && legacy.contains("ForwardAgent") && legacy.contains("LocalForward"))
+        #expect(result.warnings.contains { $0.hasPrefix("deep:") && $0.contains("second") })
+        #expect(result.warnings.contains { $0.hasPrefix("deep:") && $0.contains("admin@first:2222") })
+        // Nothing skipped, nothing reported.
+        #expect(SSHConfigParser.parse("Host a\n  HostName 1.2.3.4\n  User me").warnings.isEmpty)
+    }
+
     @Test func globAndNegation() {
         #expect(SSHConfigParser.glob("web-*", "web-12"))
         #expect(SSHConfigParser.glob("w?b", "WEB"))

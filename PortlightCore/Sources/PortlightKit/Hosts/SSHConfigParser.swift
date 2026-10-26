@@ -76,12 +76,35 @@ public enum SSHConfigParser {
             }
             entry.identityFile = found["identityfile"]
             if let jump = found["proxyjump"], jump.lowercased() != "none" {
-                entry.proxyJump = jump.split(separator: ",").first.map(String.init)  // first hop only
+                let hops = jump.split(separator: ",").map(String.init)
+                entry.proxyJump = hops.first  // first hop only
+                if hops.count > 1 {
+                    warnings.append("\(alias): ProxyJump has several hops; only \(hops[0]) is used, not \(hops.dropFirst().joined(separator: ", "))")
+                }
+                if let first = hops.first, first.contains("@") || first.contains(":") {
+                    warnings.append("\(alias): the user and port in ProxyJump \(first) are ignored; the jump host's own settings are used")
+                }
+            }
+            // Settings Portlight doesn't act on. Nothing is run or forwarded,
+            // but say so rather than drop them quietly.
+            let skipped = unsupported.filter { found[$0.key] != nil }.map(\.name)
+            if !skipped.isEmpty {
+                warnings.append("\(alias): skipped \(skipped.joined(separator: ", ")) (not supported)")
             }
             return entry
         }
         return Result(entries: entries, warnings: warnings)
     }
+
+    /// Settings that change what a connection does, which Portlight doesn't
+    /// support: reported when skipped.
+    static let unsupported: [(key: String, name: String)] = [
+        ("proxycommand", "ProxyCommand"), ("localcommand", "LocalCommand"), ("remotecommand", "RemoteCommand"),
+        ("forwardagent", "ForwardAgent"), ("localforward", "LocalForward"), ("remoteforward", "RemoteForward"),
+        ("dynamicforward", "DynamicForward"), ("forwardx11", "ForwardX11"), ("hostkeyalias", "HostKeyAlias"),
+        ("stricthostkeychecking", "StrictHostKeyChecking"), ("userknownhostsfile", "UserKnownHostsFile"),
+        ("certificatefile", "CertificateFile"),
+    ]
 
     /// `Keyword value`, `Keyword=value` or `Keyword = value`, with quotes removed.
     static func splitKeyword(_ line: String) -> (String, String)? {
