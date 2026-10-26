@@ -141,6 +141,25 @@ struct SSHIntegrationTests {
         await connection.close()
     }
 
+    @Test func serverRekeyDoesNotEndTheSession() async throws {
+        // Rekey every second; with the old stage timer, each re-key
+        // restarted it after login and closed the connection.
+        let server = try server(extra: "RekeyLimit default 1")
+        defer { server.stop() }
+        var options = SSHConnectionOptions()
+        options.handshakeTimeout = .milliseconds(800)
+        let connection = try await SSHConnection.connect(to: endpoint(server, [.key(Self.keys[.ed25519]!)]),
+                                                         options: options) { _ in true }
+        let shell = try await connection.openShell()
+        let reader = OutputReader(shell)
+        try await Task.sleep(for: .seconds(4))
+        #expect(connection.isActive)
+        shell.write("echo ALIVE-$((40+2))\n")
+        #expect(try await reader.waitFor("ALIVE-42", timeout: .seconds(5)))
+        shell.close()
+        await connection.close()
+    }
+
     @Test func jumpHostTunnelsToTheTarget() async throws {
         let bastion = try server()
         let target = try server()

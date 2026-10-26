@@ -12,6 +12,7 @@ final class HandshakeState: Sendable {
         var hostKeyRejected = false
         var credentialsExhausted = false
         var timedOut = false
+        var authenticated = false
         var timer: Scheduled<Void>?
     }
 
@@ -27,17 +28,30 @@ final class HandshakeState: Sendable {
     func recordExhausted() { values.withLockedValue { $0.credentialsExhausted = true } }
 
     /// (Re)starts the stage timer; when it fires the channel is closed.
+    /// Does nothing once logged in: a server re-key asks for the host key
+    /// again, and must not start a timer that closes a working session.
     func startTimer(on channel: Channel, after delay: TimeAmount) {
         let scheduled = channel.eventLoop.scheduleTask(in: delay) { [weak self] in
             self?.values.withLockedValue { $0.timedOut = true }
             channel.close(promise: nil)
         }
-        let previous = values.withLockedValue { values -> Scheduled<Void>? in
+        let (previous, started) = values.withLockedValue { values -> (Scheduled<Void>?, Bool) in
+            guard !values.authenticated else { return (nil, false) }
             let old = values.timer
             values.timer = scheduled
-            return old
+            return (old, true)
         }
         previous?.cancel()
+        if !started { scheduled.cancel() }
+    }
+
+    /// Login succeeded: the handshake stages are over.
+    func markAuthenticated() {
+        values.withLockedValue { values in
+            values.authenticated = true
+            values.timer?.cancel()
+            values.timer = nil
+        }
     }
 
     func stopTimer() {
@@ -156,7 +170,7 @@ final class ConnectionReadyHandler: ChannelInboundHandler {
     func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
         if event is UserAuthSuccessEvent, let ready {
             self.ready = nil
-            state.stopTimer()
+            state.markAuthenticated()
             ready.succeed(())
         }
         context.fireUserInboundEventTriggered(event)
