@@ -1,12 +1,33 @@
-# Portlight
+<p align="center">
+  <img src="docs/assets/portlight-icon.png" width="128" alt="Portlight app icon">
+</p>
 
-[![CI](https://github.com/AppachiTech/portlight-ios/actions/workflows/ci.yml/badge.svg)](https://github.com/AppachiTech/portlight-ios/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<h1 align="center">Portlight</h1>
 
-An open-source SSH terminal for iPhone and iPad, made for reaching cloud
-servers (AWS, Google Cloud, Azure, DigitalOcean, or anything that speaks SSH)
-from your phone. It's an SSH client only: your tools, including the aws and
-gcloud CLIs, run on the servers you connect to.
+<p align="center">
+  <strong>Your servers, from your phone.</strong><br>
+  An open-source SSH terminal for iPhone and iPad.
+</p>
+
+<p align="center">
+  <a href="https://github.com/AppachiTech/portlight-ios/actions/workflows/ci.yml"><img src="https://github.com/AppachiTech/portlight-ios/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/iOS-17%2B-black.svg" alt="iOS 17+">
+</p>
+
+<p align="center">
+  <img src="docs/assets/portlight-demo.webp" width="320" alt="Portlight demo: unlock with Face ID, make a key, add a server, connect, speak an instruction to Claude Code, watch it add a test and run it, then see the commands it ran in Suvadu">
+</p>
+
+<p align="center">
+  <a href="docs/assets/portlight-demo.mp4">Watch the full demo (MP4, 48 s)</a><br>
+  <sub>Recorded against the throwaway server in <a href="demo/server">demo/server</a>; the agent's commands are shown by <a href="https://suvadu.sh">Suvadu</a>.</sub>
+</p>
+
+Portlight is made for reaching cloud servers (AWS, Google Cloud, Azure,
+DigitalOcean, or anything that speaks SSH) from your phone. It's an SSH client
+only: your tools, including the aws and gcloud CLIs and coding agents like
+Claude Code, run on the servers you connect to.
 
 Portlight isn't on the App Store, and there are no plans to publish it there
 for now (that may change later). You build it yourself from this repository
@@ -46,6 +67,21 @@ it covers everything from building to your first connection.
 - **Cloud-aware details.** Per-provider default usernames (`ec2-user`,
   `ubuntu`, `azureuser`…) and the right public-key line for each provider,
   including GCP's username-as-comment format.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/hosts.png" width="240" alt="The host list with a saved server"><br><sub>Your servers, one tap away</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/key.png" width="240" alt="An Ed25519 key with its public key, stored in the Keychain on this device only"><br><sub>Keys made and kept on the phone</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/speak-to-type.png" width="240" alt="Speak to type: a spoken instruction in the draft above the Speak, Stop and Insert buttons"><br><sub>Speak to type, then check and send</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/claude-code.png" width="240" alt="Claude Code on the server after adding a test and running the suite"><br><sub>Claude Code on your server</sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/suvadu.png" width="240" alt="Suvadu's Prompt Explorer showing the prompt and the commands Claude ran"><br><sub>What the agent ran, with <a href="https://suvadu.sh">Suvadu</a></sub></td>
+    <td align="center" width="33%"><img src="docs/assets/screenshots/security.png" width="240" alt="Settings: voice input, and the lock set to Immediately"><br><sub>Locked every time it opens</sub></td>
+  </tr>
+</table>
 
 ## Security
 
@@ -97,7 +133,9 @@ walkthrough, including signing and the one-time Xcode prompts, is in
 | `App/Portlight` | The SwiftUI app. |
 | `project.yml` | XcodeGen spec for the Xcode project. |
 | `scripts/` | Icon, test fixtures, IPA and over-the-air install helpers. |
+| `demo/server/` | A throwaway SSH server in Docker for trying Portlight and recording demos. |
 | `docs/` | Building, installing, security, architecture, user guide. |
+| `docs/assets/` | The icon, demo video and screenshots used in this README. |
 
 ## Tests
 
