@@ -57,41 +57,56 @@ server through it, and asks about each one's host key the first time.
   - **ctrl** and **alt** apply to the next key you press. Tap twice to lock
     them, and once more to release.
   - Arrows and delete repeat while held.
-  - **{ }** opens your snippets.
+  - **{ }** opens your saved commands.
 - **Text size.** The **A−** and **A+** buttons in the tab bar change it a
   point at a time, or pinch. **⋯ → Fit 80 columns** picks the size that shows
   80 characters across, handy for output that wraps in portrait.
 - **Rotate.** The rotate button in the tab bar turns the terminal to
   landscape or back, even with the phone's rotation lock on. **⋯ →
-  Orientation** can also make it follow the phone. Leaving the terminal
-  always goes back to following the phone.
+  Orientation** can also make it follow the phone. The server is told the
+  new size. Leaving the terminal always goes back to following the phone.
+- **Keyboard.** The terminal shrinks to the space above the keyboard, so the
+  last lines stay in view while you type.
 - **Long-press** to select. Copy keeps the text on this phone for two
   minutes.
-- **Rotate** for a wider terminal. The server is told the new size.
-
-### Speak to type (landscape)
-
-In landscape the keyboard stays down and a voice panel takes its place:
-a side panel by default, or a strip under the terminal (**⋯ → Layout**, or
-**Settings → Voice input**).
-
-1. Tap **Speak** and say what to type, then **Stop**. The words land in the
-   draft.
-2. Edit the draft by tapping into it, tap **Clear** to start over, or tap
-   **Speak** again to add more.
-3. Tap **Insert** to type it into the terminal. It never presses Return, so
-   you can check it first, then tap **⏎**.
-
-It's made for talking to tools like Claude Code: say the instruction in
-plain English, check it, send it. The panel also has Esc, Ctrl-C, Tab, ↑, ↓
-and **⌨︎** for the full keyboard. Speech is recognised on the iPhone itself;
-the first time, iOS asks for the microphone and speech recognition.
 - **Tabs.** The strip at the top lists open sessions. **⌄** goes back to your
   hosts while sessions stay open.
 - When a session ends or drops, tap **Reconnect**.
 
 Run `tmux new -A -s main` on the server, or set it as the host's **Run on
 connect** command, so your work survives dropped connections.
+
+### Speak to type
+
+A strip under the terminal takes speech, so the keyboard can stay down: one
+row in landscape, two in portrait. Turn it off under **Settings → Voice
+input** or **⋯ → Speak to type**.
+
+1. Tap **Speak** and say what to type, then **Stop**. The words land in the
+   draft, in lower case.
+2. Tap into the draft to edit it (the strip moves up above the keyboard),
+   tap **✕** to clear it, or tap **Speak** again to add more.
+3. Tap **Insert** to type it into the terminal. It never presses Return, so
+   you can check it first, then tap **⏎**.
+
+It's made for talking to tools like Claude Code: say the instruction in
+plain English, check it, send it. The strip also has **⌨︎** for the
+keyboard, saved commands, Esc, Ctrl-C and Tab. While you type in the
+terminal the strip steps aside; hide the keyboard to bring it back. Speech
+is recognised on the iPhone itself; the first time, iOS asks for the
+microphone and speech recognition.
+
+### Saved commands
+
+Commands you run often, like `git status` or `terraform plan`, one tap away
+from **{ }** on the key bar or the voice strip. Add them there with **+**,
+or in **Settings → Saved commands**. Each one can press Return for you;
+leave that off for commands that change things, like `terraform apply`, so
+you can read them first.
+
+Saved commands are stored as plain text, so Portlight won't save one that
+looks like it contains a password, key or token. Refer to secrets instead,
+for example `$GITHUB_TOKEN`, `$(gh auth token)` or `--password-stdin < file`.
 
 ## Importing what you already have
 
@@ -107,4 +122,4 @@ connect** command, so your work survives dropped connections.
 - **Lock.** Portlight always locks. You can allow up to five minutes away
   before it asks again.
 - **Keepalive.** Helps idle connections survive on mobile networks.
-- **Snippets.** Commands you run often, one tap from the key bar.
+- **Saved commands.** Commands you run often, one tap from the key bar.
