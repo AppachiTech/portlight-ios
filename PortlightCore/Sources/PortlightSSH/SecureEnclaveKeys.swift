@@ -8,8 +8,9 @@ import Security
 
 /// SSH keys created inside the Secure Enclave. The private key never leaves
 /// the chip: Portlight keeps only an opaque, device-bound handle (in the
-/// Keychain), and every signature needs Face ID, Touch ID or the passcode,
-/// satisfied by the context the app unlocked with.
+/// Keychain). Signing needs Face ID, Touch ID or the passcode; the context
+/// the app unlocked with satisfies that, so signatures don't prompt again
+/// until the app locks and the context is invalidated.
 public enum SecureEnclaveKeys {
     public enum Failure: Error, LocalizedError {
         case unavailable

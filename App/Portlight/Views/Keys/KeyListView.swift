@@ -86,7 +86,7 @@ struct KeyListView: View {
                 Button("Create") { createEnclave() }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("A P-256 key made inside the Secure Enclave. It can never leave this iPhone, can't be exported or backed up, and each use needs Face ID or your passcode. If you lose the phone, you'll need another way into your servers.")
+                Text("A P-256 key made inside the Secure Enclave. It can never leave this iPhone, can't be exported or backed up, and it only works while Portlight is unlocked with Face ID or your passcode. If you lose the phone, you'll need another way into your servers.")
             }
             .sheet(isPresented: $importing) {
                 KeyImportView()
