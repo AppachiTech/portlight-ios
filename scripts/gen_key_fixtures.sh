@@ -21,7 +21,10 @@ gen ed25519_aes128ctr -t ed25519 -N "$pass" -a 4 -Z aes128-ctr
 gen ed25519_aes256cbc -t ed25519 -N "$pass" -a 4 -Z aes256-cbc
 gen ed25519_gcm -t ed25519 -N "$pass" -a 4 -Z aes256-gcm@openssh.com
 gen rsa_plain -t rsa -b 2048 -N ""
-gen p256_pem -t ecdsa -b 256 -N "" -m PEM
+# Named-curve SEC1 PEM, the common form. (Newer ssh-keygen -m PEM writes
+# explicit curve parameters, which CryptoKit doesn't read.)
+openssl ecparam -name prime256v1 -genkey -noout -out "$tmp/p256_pem" 2>/dev/null
+ssh-keygen -y -f "$tmp/p256_pem" > "$tmp/p256_pem.pub"
 openssl genpkey -algorithm ed25519 -out "$tmp/ed25519_pkcs8" 2>/dev/null
 openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-384 -out "$tmp/p384_pkcs8" 2>/dev/null
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$tmp/rsa_pkcs8" 2>/dev/null
@@ -44,7 +47,8 @@ out=PortlightCore/Tests/PortlightKitTests/KeyFixtures.swift
   echo "enum KeyFixtures {"
   echo "    static let passphrase = \"$pass\""
   for f in ed25519_plain ed25519_enc ed25519_enc16 p256_plain p384_enc p521_enc ed25519_aes128ctr ed25519_aes256cbc ed25519_gcm rsa_plain p256_pem ed25519_pkcs8 p384_pkcs8 rsa_pkcs8; do
-    name=$(echo "$f" | sed -E 's/_([a-z0-9])/\U\1/g')
+    # snake_case to camelCase (portable: BSD sed has no \U).
+    name=$(python3 -c 'import re,sys; print(re.sub(r"_([a-z0-9])", lambda m: m.group(1).upper(), sys.argv[1]))' "$f")
     echo ""
     echo "    static let $name = \"\"\""
     sed "s/^/    /" "$tmp/$f"
