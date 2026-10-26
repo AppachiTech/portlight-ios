@@ -104,12 +104,25 @@ struct HostEditorView: View {
                 } header: {
                     Text("Options")
                 } footer: {
-                    Text("A jump host (bastion) is connected first, and this server is reached through it, like ProxyJump.")
+                    if let warning = secretWarning(in: host.startupCommand, field: "Run on connect") {
+                        Label(warning, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    } else {
+                        Text("A jump host (bastion) is connected first, and this server is reached through it, like ProxyJump.")
+                    }
                 }
 
-                Section("Notes") {
+                Section {
                     TextField("Notes", text: notesBinding, axis: .vertical)
                         .lineLimit(2...6)
+                        .autocorrectionDisabled()
+                } header: {
+                    Text("Notes")
+                } footer: {
+                    if let warning = secretWarning(in: host.notes, field: "Notes") {
+                        Label(warning, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    } else {
+                        Text("Stored as plain text: don't put passwords or keys here.")
+                    }
                 }
 
                 if !problems.isEmpty {
@@ -159,7 +172,20 @@ struct HostEditorView: View {
         Binding(get: { host.notes ?? "" }, set: { host.notes = $0.isEmpty ? nil : $0 })
     }
 
+    /// Host settings are stored as plain text, like saved commands.
+    private func secretWarning(in text: String?, field: String) -> String? {
+        guard let text, !text.isEmpty else { return nil }
+        let found = CommandSecrets.problems(in: text)
+        guard !found.isEmpty else { return nil }
+        return "\(field) looks like it contains \(found.formatted(.list(type: .and))). It's stored as plain text; refer to the secret instead, e.g. $TOKEN."
+    }
+
     private func save() {
+        // Run on connect is a saved command in all but name: same rule.
+        if let warning = secretWarning(in: host.startupCommand, field: "Run on connect") {
+            problems = [warning]
+            return
+        }
         host.hostname = host.hostname.trimmingCharacters(in: .whitespacesAndNewlines)
         host.username = host.username.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let port = Int(portText.trimmingCharacters(in: .whitespaces)) else {
