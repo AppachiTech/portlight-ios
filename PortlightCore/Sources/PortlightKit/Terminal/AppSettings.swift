@@ -104,6 +104,12 @@ public struct Snippet: Codable, Identifiable, Hashable, Sendable {
 
     public static let starters: [Snippet] = [
         Snippet(title: "tmux: attach or start", command: "tmux new -A -s main"),
+        Snippet(title: "Git status", command: "git status"),
+        Snippet(title: "Git pull", command: "git pull"),
+        Snippet(title: "Git log", command: "git log --oneline -n 20"),
+        Snippet(title: "Terraform plan", command: "terraform plan"),
+        // Changes infrastructure: typed, but Return is left to you.
+        Snippet(title: "Terraform apply", command: "terraform apply", runImmediately: false),
         Snippet(title: "Disk usage", command: "df -h"),
         Snippet(title: "Memory", command: "free -h"),
         Snippet(title: "Top processes", command: "top"),
