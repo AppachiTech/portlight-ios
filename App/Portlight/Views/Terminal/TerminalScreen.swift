@@ -212,6 +212,7 @@ struct TerminalPane: View {
     @Environment(AppModel.self) private var model
     @State private var showingSnippets = false
     @State private var pendingPaste: PendingPaste?
+    @State private var pendingLink: URL?
     /// The voice input draft; kept here so it survives turning the phone.
     @State private var voiceDraft = ""
     /// Whether the terminal has the keyboard. Voice input steps aside while
@@ -230,7 +231,8 @@ struct TerminalPane: View {
                     onSnippets: { showingSnippets = true },
                     onFontSizeChange: { model.library.settings.fontSize = $0 },
                     onConfirmPaste: { text, answer in pendingPaste = PendingPaste(text: text, answer: answer) },
-                    onFocusChange: { terminalFocused = $0 })
+                    onFocusChange: { terminalFocused = $0 },
+                    onOpenLink: { pendingLink = $0 })
                 SessionStatusBanner(session: session) {
                     model.close(session)
                 }
@@ -268,6 +270,14 @@ struct TerminalPane: View {
                 }
             }
             .presentationDetents([.medium, .large])
+        }
+        .confirmationDialog("Open this link?", isPresented: Binding(
+            get: { pendingLink != nil }, set: { if !$0 { pendingLink = nil } }),
+            titleVisibility: .visible, presenting: pendingLink) { url in
+            Button("Open in Safari") { UIApplication.shared.open(url) }
+            Button("Cancel", role: .cancel) {}
+        } message: { url in
+            Text(url.absoluteString)
         }
         .confirmationDialog("Paste several lines?", isPresented: Binding(
             get: { pendingPaste != nil }, set: { if !$0 { pendingPaste = nil } }),

@@ -64,6 +64,8 @@ final class TerminalController: NSObject, TerminalViewDelegate {
     var onSnippets: () -> Void = {}
     var onFontSizeChange: (Double) -> Void = { _ in }
     var onConfirmPaste: (String, @escaping (Bool) -> Void) -> Void = { _, answer in answer(false) }
+    /// Shows a link's real address and opens it only if the user agrees.
+    var onOpenLink: (URL) -> Void = { _ in }
 
     private var applied: AppSettings?
     private var observers: [NSObjectProtocol] = []
@@ -267,7 +269,9 @@ final class TerminalController: NSObject, TerminalViewDelegate {
         guard let url = URL(string: link), let scheme = url.scheme?.lowercased(), scheme == "https" || scheme == "http" else {
             return
         }
-        MainActor.assumeIsolated { UIApplication.shared.open(url) }
+        // A link's text can say one thing and point elsewhere (OSC 8), so
+        // the real address is shown first.
+        onOpenLink(url)
     }
 
     func bell(source: TerminalView) {
@@ -300,6 +304,7 @@ struct TerminalViewRepresentable: UIViewRepresentable {
     var onFontSizeChange: (Double) -> Void
     var onConfirmPaste: (String, @escaping (Bool) -> Void) -> Void
     var onFocusChange: (Bool) -> Void = { _ in }
+    var onOpenLink: (URL) -> Void = { _ in }
 
     func makeUIView(context: Context) -> PortlightTerminalView {
         update()
@@ -323,5 +328,6 @@ struct TerminalViewRepresentable: UIViewRepresentable {
         controller.onFontSizeChange = onFontSizeChange
         controller.onConfirmPaste = onConfirmPaste
         controller.view.onFocusChange = onFocusChange
+        controller.onOpenLink = onOpenLink
     }
 }
