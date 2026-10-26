@@ -67,14 +67,18 @@ struct VoiceInputView: View {
                 insertButton.frame(maxWidth: .infinity)
                 enterButton.frame(maxWidth: .infinity)
             }
-            HStack(spacing: 4) {
-                keyButton("esc", accessibility: "Escape") { controller.handle(.key(.escape)) }
-                keyButton("^C", accessibility: "Control C") { controller.session.send([0x03]) }
-                keyButton("tab", accessibility: "Tab") { controller.handle(.key(.tab)) }
-                keyButton("↑", accessibility: "Up arrow") { controller.handle(.key(.up)) }
-                keyButton("↓", accessibility: "Down arrow") { controller.handle(.key(.down)) }
-                keyboardButton
+            // Scrolls sideways if larger text sizes make the keys too wide.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    keyButton("esc", accessibility: "Escape") { controller.handle(.key(.escape)) }
+                    keyButton("^C", accessibility: "Control C") { controller.session.send([0x03]) }
+                    keyButton("tab", accessibility: "Tab") { controller.handle(.key(.tab)) }
+                    keyButton("↑", accessibility: "Up arrow") { controller.handle(.key(.up)) }
+                    keyButton("↓", accessibility: "Down arrow") { controller.handle(.key(.down)) }
+                    keyboardButton
+                }
             }
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         }
         .controlSize(.small)
         .padding(8)
