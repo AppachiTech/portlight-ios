@@ -8,8 +8,8 @@ import PortlightKit
 @MainActor
 public final class HostKeyPrompt: Identifiable {
     public enum Kind: Equatable {
-        /// First time seeing this host (or this key type for it).
-        case new(otherTypesKnown: Bool)
+        /// No key on file for this host yet.
+        case new
         /// A different key than the one on file: possibly an attack.
         case changed(previousFingerprint: String)
     }
@@ -347,8 +347,8 @@ public final class TerminalSession: Identifiable {
         case .revoked:
             notice("The host key for \(label) is marked revoked. Refusing to connect.")
             return false
-        case .unknown(let otherTypesKnown):
-            kind = .new(otherTypesKnown: otherTypesKnown)
+        case .unknown:
+            kind = .new
         case .changed(let previous):
             kind = .changed(previousFingerprint: previous.sha256Fingerprint)
         }

@@ -37,7 +37,7 @@ struct TerminalSessionTests {
         session.connect()
         try await waitUntil { session.hostKeyPrompt != nil }
         let prompt = try #require(session.hostKeyPrompt)
-        #expect(prompt.kind == .new(otherTypesKnown: false))
+        #expect(prompt.kind == .new)
         #expect(prompt.fingerprint == server.hostKeyFingerprint)
         #expect(prompt.hostLabel == "local")
         prompt.trust()

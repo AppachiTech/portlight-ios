@@ -165,13 +165,15 @@ import Testing
 
     @Test func trustOnFirstUseFlow() {
         var known = KnownHosts()
-        #expect(known.verdict(host: "box", port: 22, key: keyA) == .unknown(otherTypesKnown: false))
+        #expect(known.verdict(host: "box", port: 22, key: keyA) == .unknown)
         known.trust(host: "Box", port: 22, key: keyA)
         #expect(known.verdict(host: "box", port: 22, key: keyA) == .trusted)
         #expect(known.verdict(host: "box", port: 22, key: keyB) == .changed(previous: keyA))
-        #expect(known.verdict(host: "box", port: 22, key: keyP) == .unknown(otherTypesKnown: true))
+        // A key of another type is a change too: an attacker could offer
+        // only a type you haven't trusted to dodge the warning.
+        #expect(known.verdict(host: "box", port: 22, key: keyP) == .changed(previous: keyA))
         // Another port is another host.
-        #expect(known.verdict(host: "box", port: 2222, key: keyA) == .unknown(otherTypesKnown: false))
+        #expect(known.verdict(host: "box", port: 2222, key: keyA) == .unknown)
         // Replacing deliberately.
         known.trust(host: "box", port: 22, key: keyB)
         #expect(known.verdict(host: "box", port: 22, key: keyB) == .trusted)
@@ -196,7 +198,7 @@ import Testing
         garbage line
         """
         var known = KnownHosts()
-        #expect(known.importOpenSSH(text) == 4)
+        #expect(known.importOpenSSH(text) == 3)
         #expect(known.verdict(host: "10.0.0.9", port: 22, key: keyA) == .trusted)
         #expect(known.verdict(host: "bastion.example.com", port: 22, key: keyA) == .trusted)
         #expect(known.verdict(host: "10.0.0.5", port: 2222, key: keyB) == .trusted)  // hashed
@@ -205,7 +207,7 @@ import Testing
         let exported = known.exportOpenSSH()
         #expect(exported.contains("@revoked * ecdsa-sha2-nistp256"))
         var again = KnownHosts()
-        #expect(again.importOpenSSH(exported) == 4)
+        #expect(again.importOpenSSH(exported) == 3)
     }
 
     @Test func hashedEntryFromSSHKeygen() throws {
@@ -214,7 +216,47 @@ import Testing
         known.importOpenSSH(line)
         let key = try SSHPublicKey(openSSH: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJnnIVEZ0KqglYfW1V/OpN9io9SBodLAG/hEffisjAUi")
         #expect(known.verdict(host: "box.example.com", port: 22, key: key) == .trusted)
-        #expect(known.verdict(host: "other.example.com", port: 22, key: key) == .unknown(otherTypesKnown: false))
+        #expect(known.verdict(host: "other.example.com", port: 22, key: key) == .unknown)
+    }
+
+    @Test func revokingAnAlreadyTrustedKeyTakesEffect() {
+        var known = KnownHosts()
+        known.trust(host: "host.example.com", port: 22, key: keyA)
+        #expect(known.importOpenSSH("@revoked host.example.com \(keyA.openSSHString())") == 1)
+        #expect(known.verdict(host: "host.example.com", port: 22, key: keyA) == .revoked)
+        #expect(known.entries.filter { !$0.revoked }.isEmpty)
+        // Same file order: a plain line, then its revocation.
+        var fromFile = KnownHosts()
+        fromFile.importOpenSSH("box \(keyB.openSSHString())\n@revoked box \(keyB.openSSHString())")
+        #expect(fromFile.verdict(host: "box", port: 22, key: keyB) == .revoked)
+    }
+
+    @Test func negatedPatternsExcludeHosts() {
+        var known = KnownHosts()
+        #expect(known.importOpenSSH("*.corp,!dmz.corp \(keyA.openSSHString())") == 1)
+        #expect(known.verdict(host: "web.corp", port: 22, key: keyA) == .trusted)
+        #expect(known.verdict(host: "dmz.corp", port: 22, key: keyA) == .unknown)
+    }
+
+    @Test func trustAndForgetLeaveWildcardEntriesAlone() {
+        var known = KnownHosts()
+        known.importOpenSSH("*.corp \(keyA.openSSHString())")
+        #expect(known.verdict(host: "a.corp", port: 22, key: keyB) == .changed(previous: keyA))
+        known.trust(host: "a.corp", port: 22, key: keyB)
+        #expect(known.verdict(host: "a.corp", port: 22, key: keyB) == .trusted)
+        // b.corp is still covered by the wildcard, so a change there warns.
+        #expect(known.verdict(host: "b.corp", port: 22, key: keyA) == .trusted)
+        #expect(known.verdict(host: "b.corp", port: 22, key: keyB) == .changed(previous: keyA))
+        known.forget(host: "a.corp", port: 22)
+        #expect(known.entries.map(\.hostPattern) == ["*.corp"])
+    }
+
+    @Test func replacingAKeyDropsOtherTypesForThatHost() {
+        var known = KnownHosts()
+        known.trust(host: "box", port: 22, key: keyA)
+        known.trust(host: "box", port: 22, key: keyP)
+        #expect(known.entries.count == 1)
+        #expect(known.verdict(host: "box", port: 22, key: keyP) == .trusted)
     }
 
     @Test func pythonHashedNameMatches() {

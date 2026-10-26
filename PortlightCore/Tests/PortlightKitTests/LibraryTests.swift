@@ -128,7 +128,7 @@ import Testing
         library.trustHostKey(host: "box", port: 22, key: key)
         #expect(makeLibrary().hostKeyVerdict(host: "box", port: 22, key: key) == .trusted)
         library.forgetHostKeys(host: "box", port: 22)
-        #expect(makeLibrary().hostKeyVerdict(host: "box", port: 22, key: key) == .unknown(otherTypesKnown: false))
+        #expect(makeLibrary().hostKeyVerdict(host: "box", port: 22, key: key) == .unknown)
         #expect(library.importKnownHosts("box \(key.openSSHString())") == 1)
     }
 

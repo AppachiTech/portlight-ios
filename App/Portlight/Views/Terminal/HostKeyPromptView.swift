@@ -11,14 +11,10 @@ struct HostKeyPromptView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     switch prompt.kind {
-                    case .new(let otherTypesKnown):
+                    case .new:
                         Label("New server", systemImage: "questionmark.diamond")
                             .font(.title2.weight(.semibold))
                         Text("This is the first connection to **\(prompt.hostLabel)** (\(prompt.host), port \(prompt.port)). Check the fingerprint below matches the server's before trusting it.")
-                        if otherTypesKnown {
-                            Text("A key of a different type is already trusted for this server. That's usually harmless (the server offered another key type), but check the fingerprint.")
-                                .foregroundStyle(.orange)
-                        }
                     case .changed:
                         Label("The server's identity changed", systemImage: "exclamationmark.octagon.fill")
                             .font(.title2.weight(.semibold))
