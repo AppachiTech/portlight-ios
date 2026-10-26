@@ -97,6 +97,10 @@ final class TerminalController: NSObject, TerminalViewDelegate {
         _ = view.becomeFirstResponder()
     }
 
+    func unfocus() {
+        _ = view.resignFirstResponder()
+    }
+
     /// The font size that shows `columns` characters across the view now.
     func fontSize(fittingColumns columns: Int) -> Double? {
         let probe = UIFont.monospacedSystemFont(ofSize: 100, weight: .regular)
@@ -244,6 +248,8 @@ final class TerminalController: NSObject, TerminalViewDelegate {
 struct TerminalViewRepresentable: UIViewRepresentable {
     let controller: TerminalController
     let settings: AppSettings
+    /// Bring up the keyboard when shown; off while voice input is showing.
+    var autoFocus = true
     var onSnippets: () -> Void
     var onFontSizeChange: (Double) -> Void
     var onConfirmPaste: (String, @escaping (Bool) -> Void) -> Void
@@ -252,8 +258,10 @@ struct TerminalViewRepresentable: UIViewRepresentable {
         update()
         controller.apply(settings)
         // Bring up the keyboard once the view is on screen.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak controller] in
-            controller?.focus()
+        if autoFocus {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak controller] in
+                controller?.focus()
+            }
         }
         return controller.view
     }

@@ -38,7 +38,25 @@ struct SettingsView: View {
                     }
                     Toggle("Vibrate on bell", isOn: $library.settings.hapticBell)
                     Toggle("Keep screen awake in terminal", isOn: $library.settings.keepScreenAwake)
+                    Picker("Orientation", selection: $library.settings.terminalOrientation) {
+                        Text("Follow the phone").tag(TerminalOrientation.automatic)
+                        Text("Landscape").tag(TerminalOrientation.landscape)
+                        Text("Portrait").tag(TerminalOrientation.portrait)
+                    }
                     NavigationLink("Snippets") { SnippetsView() }
+                }
+
+                Section {
+                    Toggle("Speak to type in landscape", isOn: $library.settings.voiceInput)
+                    Picker("Layout", selection: $library.settings.voiceInputLayout) {
+                        Text("Side panel").tag(VoiceInputLayout.sidePanel)
+                        Text("Bottom strip").tag(VoiceInputLayout.bottomStrip)
+                    }
+                    .disabled(!library.settings.voiceInput)
+                } header: {
+                    Text("Voice input")
+                } footer: {
+                    Text("In landscape the keyboard stays down and a panel takes speech instead. What you say lands in a draft you can edit; Insert types it into the terminal without pressing Return. Speech is recognised on this iPhone and audio never leaves it.")
                 }
 
                 Section {

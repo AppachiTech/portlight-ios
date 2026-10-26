@@ -138,6 +138,19 @@ struct TerminalViewControls: View {
                     Label("Orientation", systemImage: "rectangle.landscape.rotate")
                 }
                 .pickerStyle(.menu)
+                Section("Voice input in landscape") {
+                    Toggle(isOn: $library.settings.voiceInput) {
+                        Label("Speak to type", systemImage: "mic")
+                    }
+                    Picker(selection: $library.settings.voiceInputLayout) {
+                        Label("Side panel", systemImage: "rectangle.righthalf.filled").tag(VoiceInputLayout.sidePanel)
+                        Label("Bottom strip", systemImage: "rectangle.bottomthird.inset.filled").tag(VoiceInputLayout.bottomStrip)
+                    } label: {
+                        Label("Layout", systemImage: "rectangle.split.2x1")
+                    }
+                    .pickerStyle(.menu)
+                    .disabled(!library.settings.voiceInput)
+                }
                 Picker(selection: $library.settings.themeName) {
                     ForEach(TerminalTheme.all) { theme in
                         Text(theme.name).tag(theme.name)
@@ -202,19 +215,38 @@ struct TerminalPane: View {
     @Environment(AppModel.self) private var model
     @State private var showingSnippets = false
     @State private var pendingPaste: PendingPaste?
+    /// The voice input draft; kept here so it survives turning the phone.
+    @State private var voiceDraft = ""
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            TerminalViewRepresentable(
-                controller: model.terminal(for: session),
-                settings: model.library.settings,
-                onSnippets: { showingSnippets = true },
-                onFontSizeChange: { model.library.settings.fontSize = $0 },
-                onConfirmPaste: { text, answer in pendingPaste = PendingPaste(text: text, answer: answer) })
-            SessionStatusBanner(session: session) {
-                model.close(session)
+        let settings = model.library.settings
+        let controller = model.terminal(for: session)
+        let showVoice = settings.voiceInput && verticalSizeClass == .compact
+        // AnyLayout keeps the terminal's identity when the panel moves.
+        let layout = showVoice && settings.voiceInputLayout == .sidePanel
+            ? AnyLayout(HStackLayout(spacing: 0)) : AnyLayout(VStackLayout(spacing: 0))
+        layout {
+            ZStack(alignment: .bottom) {
+                TerminalViewRepresentable(
+                    controller: controller,
+                    settings: settings,
+                    autoFocus: !showVoice,
+                    onSnippets: { showingSnippets = true },
+                    onFontSizeChange: { model.library.settings.fontSize = $0 },
+                    onConfirmPaste: { text, answer in pendingPaste = PendingPaste(text: text, answer: answer) })
+                SessionStatusBanner(session: session) {
+                    model.close(session)
+                }
+                .padding(12)
             }
-            .padding(12)
+            if showVoice {
+                VoiceInputView(layout: settings.voiceInputLayout, controller: controller, draft: $voiceDraft)
+            }
+        }
+        .onChange(of: showVoice) { _, shown in
+            // Voice input replaces the keyboard; ⌨︎ brings it back.
+            if shown { controller.unfocus() }
         }
         .sheet(item: Binding(get: { session.hostKeyPrompt }, set: { _ in })) { prompt in
             HostKeyPromptView(prompt: prompt)

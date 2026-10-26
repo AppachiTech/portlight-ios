@@ -63,6 +63,8 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         NSFaceIDUsageDescription: Portlight uses Face ID to unlock, so only you can open your servers and keys.
         NSLocalNetworkUsageDescription: Portlight connects over SSH to servers you add, including ones on your local network.
+        NSMicrophoneUsageDescription: After you tap Speak, Portlight listens so it can type what you say into the terminal.
+        NSSpeechRecognitionUsageDescription: Portlight turns your speech into text on this iPhone. Audio never leaves the device.
         UIFileSharingEnabled: false
         LSSupportsOpeningDocumentsInPlace: false
 schemes:
