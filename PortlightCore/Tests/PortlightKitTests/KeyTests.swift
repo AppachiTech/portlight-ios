@@ -131,3 +131,49 @@ import Testing
         #expect(result.output.hasPrefix(key.publicKey.openSSHString()))
     }
 }
+
+@Suite struct HostileKeyFileTests {
+    /// An encrypted key file with its bcrypt options replaced.
+    func keyFile(kdfOptions make: (inout SSHWriter) -> Void) throws -> String {
+        let key = SSHPrivateKey.generate(.ed25519)
+        let armored = try OpenSSHKeyFile.encode(key, comment: "t", passphrase: "correct horse")
+        let body = armored.split(separator: "\n").filter { !$0.hasPrefix("-----") }.joined()
+        var reader = SSHReader(Array(Data(base64Encoded: body)!))
+        let magic = try reader.readBytes(15)
+        let cipher = try reader.readString()
+        let kdf = try reader.readString()
+        _ = try reader.readString()
+        let rest = reader.readRemaining()
+        var options = SSHWriter()
+        make(&options)
+        var file = SSHWriter()
+        file.writeRaw(magic)
+        file.writeString(cipher)
+        file.writeString(kdf)
+        file.writeString(options.bytes)
+        file.writeRaw(rest)
+        return "-----BEGIN OPENSSH PRIVATE KEY-----\n"
+            + Data(file.bytes).base64EncodedString(options: .lineLength64Characters)
+            + "\n-----END OPENSSH PRIVATE KEY-----\n"
+    }
+
+    @Test func tooManyBcryptRoundsAreRefusedUpFront() throws {
+        // 10,000 rounds would freeze import for about a minute.
+        let text = try keyFile { options in
+            options.writeString([UInt8](repeating: 7, count: 16))
+            options.writeUInt32(10_000)
+        }
+        let started = ContinuousClock.now
+        #expect(throws: SSHKeyError.self) { try KeyImporter.importKey(text, passphrase: "correct horse") }
+        #expect(ContinuousClock.now - started < .seconds(1))
+        #expect(OpenSSHKeyFile.maxRounds >= 100 && OpenSSHKeyFile.maxRounds <= 1000)
+    }
+
+    @Test func badSaltIsReportedAsADamagedFile() throws {
+        let text = try keyFile { options in
+            options.writeString([UInt8]())
+            options.writeUInt32(16)
+        }
+        #expect(throws: SSHKeyError.corrupt("bcrypt options")) { try KeyImporter.importKey(text, passphrase: "correct horse") }
+    }
+}

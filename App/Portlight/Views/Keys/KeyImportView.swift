@@ -10,6 +10,10 @@ struct KeyImportView: View {
     @State private var passphrase = ""
     @State private var pickingFile = false
     @State private var problem: String?
+    @State private var importing = false
+    /// The clipboard's change count when its text was pasted in, so it can
+    /// be cleared after import if it still holds the private key.
+    @State private var pastedChangeCount: Int?
 
     private var inspection: KeyImporter.Inspection? {
         text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : KeyImporter.inspect(text)
@@ -34,6 +38,7 @@ struct KeyImportView: View {
                     if UIPasteboard.general.hasStrings {
                         Button {
                             text = UIPasteboard.general.string ?? ""
+                            pastedChangeCount = UIPasteboard.general.changeCount
                         } label: {
                             Label("Paste", systemImage: "doc.on.clipboard")
                         }
@@ -82,10 +87,15 @@ struct KeyImportView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Import", action: importKey)
-                        .disabled(!canImport)
+                    if importing {
+                        ProgressView()
+                    } else {
+                        Button("Import", action: importKey)
+                            .disabled(!canImport)
+                    }
                 }
             }
+            .disabled(importing)
             .fileImporter(isPresented: $pickingFile, allowedContentTypes: [.data, .plainText, .item]) { result in
                 switch result {
                 case .success(let url):
@@ -110,13 +120,30 @@ struct KeyImportView: View {
         }
     }
 
+    /// Decrypting runs off the main thread: bcrypt can take seconds.
     private func importKey() {
-        do {
-            try model.library.importKey(text, passphrase: passphrase.isEmpty ? nil : passphrase,
-                                        name: name.isEmpty ? nil : name)
-            dismiss()
-        } catch {
-            problem = error.localizedDescription
+        let (text, passphrase) = (self.text, self.passphrase.isEmpty ? nil : self.passphrase)
+        importing = true
+        problem = nil
+        Task {
+            let decoded = await Task.detached(priority: .userInitiated) {
+                Result { try KeyImporter.importKey(text, passphrase: passphrase) }
+            }.value
+            importing = false
+            do {
+                try model.library.add(decoded.get(), name: name.isEmpty ? nil : name)
+                clearPastedKey()
+                dismiss()
+            } catch {
+                problem = error.localizedDescription
+            }
         }
+    }
+
+    /// The private key was pasted in and nothing has been copied since:
+    /// don't leave it on the clipboard (or Universal Clipboard).
+    private func clearPastedKey() {
+        guard let pastedChangeCount, UIPasteboard.general.changeCount == pastedChangeCount else { return }
+        UIPasteboard.general.items = []
     }
 }

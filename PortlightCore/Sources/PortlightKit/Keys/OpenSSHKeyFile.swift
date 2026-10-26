@@ -11,6 +11,10 @@ public enum OpenSSHKeyFile {
     /// The default number of bcrypt rounds when Portlight encrypts a key, the
     /// same as `ssh-keygen -a 16`.
     public static let defaultRounds = 16
+    /// The most bcrypt rounds a key file may ask for. Each round costs
+    /// milliseconds, so a file asking for 10,000 would stall import for a
+    /// minute or more; ssh-keygen uses 16 unless told otherwise.
+    public static let maxRounds: UInt32 = 1000
 
     // MARK: Decoding
 
@@ -79,10 +83,17 @@ public enum OpenSSHKeyFile {
             } catch {
                 throw SSHKeyError.corrupt("bcrypt options")
             }
-            guard rounds >= 1, rounds <= 10_000 else { throw SSHKeyError.corrupt("bcrypt rounds \(rounds)") }
-            let derived = try BcryptPBKDF.derive(
-                password: Array(passphrase.utf8), salt: salt,
-                keyLength: cipher.keyLength + cipher.ivLength, rounds: Int(rounds))
+            guard rounds >= 1, rounds <= maxRounds else {
+                throw SSHKeyError.corrupt("\(rounds) bcrypt rounds; Portlight allows up to \(maxRounds)")
+            }
+            let derived: [UInt8]
+            do {
+                derived = try BcryptPBKDF.derive(
+                    password: Array(passphrase.utf8), salt: salt,
+                    keyLength: cipher.keyLength + cipher.ivLength, rounds: Int(rounds))
+            } catch {
+                throw SSHKeyError.corrupt("bcrypt options")
+            }
             let key = Array(derived.prefix(cipher.keyLength))
             let iv = Array(derived.dropFirst(cipher.keyLength))
             plain = try cipher.decrypt(header.encrypted, tag: Array(header.trailing.prefix(cipher.tagLength)),

@@ -179,7 +179,13 @@ public final class Library {
 
     @discardableResult
     public func importKey(_ text: String, passphrase: String? = nil, name: String? = nil) throws -> KeyRecord {
-        let imported = try KeyImporter.importKey(text, passphrase: passphrase)
+        try add(KeyImporter.importKey(text, passphrase: passphrase), name: name)
+    }
+
+    /// Stores a key decoded elsewhere, e.g. off the main thread, since
+    /// decrypting a key file can take a while.
+    @discardableResult
+    public func add(_ imported: KeyImporter.Imported, name: String? = nil) throws -> KeyRecord {
         if let existing = keys.first(where: { $0.publicKeyBlob == Data(imported.key.publicKey.blob) }) {
             throw LibraryError.duplicateKey(existing.name)
         }
