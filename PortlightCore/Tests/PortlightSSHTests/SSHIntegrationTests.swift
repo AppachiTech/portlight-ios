@@ -124,12 +124,12 @@ struct SSHIntegrationTests {
             }
         }
         try await Task.sleep(for: .seconds(2))
-        // Nothing handled: the backlog stops near the 1 MiB pause point
-        // plus one SSH window, far short of the 12 MB sent.
-        let stalled = await counter.total
+        // Nothing handled: output stops near the 1 MiB pause point, far
+        // short of the 12 MB sent. Counting and starting to handle happen in
+        // one step, so no output can slip between them unhandled.
+        let stalled = await counter.startHandling { shell.outputHandled($0) }
         #expect(stalled > 0 && stalled < 8_000_000, "\(stalled) bytes")
         // Handling it lets the rest through.
-        await counter.setHandler { shell.outputHandled($0) }
         shell.outputHandled(stalled)
         let deadline = ContinuousClock.now + .seconds(30)
         while !(await counter.sawMarker), ContinuousClock.now < deadline {
@@ -257,14 +257,21 @@ actor ByteCounter {
     private var tail: [UInt8] = []
     private var handler: ((Int) -> Void)?
 
-    func setHandler(_ handler: @escaping @Sendable (Int) -> Void) { self.handler = handler }
+    /// Passes each later chunk's size to `handler`; returns the bytes seen so far.
+    func startHandling(_ handler: @escaping @Sendable (Int) -> Void) -> Int {
+        self.handler = handler
+        return total
+    }
 
     /// Returns true once the marker has been seen.
     func add(_ bytes: [UInt8]) -> Bool {
         total += bytes.count
         handler?(bytes.count)
-        tail = Array((tail + bytes).suffix(64))
-        if String(decoding: tail, as: UTF8.self).contains("DONE-42") { sawMarker = true }
+        // Search before trimming: one chunk can hold the marker and the
+        // prompt after it, which would push the marker out of `tail`.
+        let recent = tail + bytes
+        if String(decoding: recent, as: UTF8.self).contains("DONE-42") { sawMarker = true }
+        tail = Array(recent.suffix(64))
         return sawMarker
     }
 }
