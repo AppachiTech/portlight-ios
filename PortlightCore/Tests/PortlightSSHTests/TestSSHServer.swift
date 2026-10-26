@@ -106,7 +106,11 @@ final class TestSSHServer: @unchecked Sendable {
     static func waitForPort(_ port: Int, pid: pid_t) -> Bool {
         for _ in 0..<50 {
             guard Spawn.isRunning(pid) else { return false }
+            #if canImport(Glibc)
             let fd = socket(AF_INET, Int32(SOCK_STREAM.rawValue), 0)
+            #else
+            let fd = socket(AF_INET, SOCK_STREAM, 0)
+            #endif
             var address = sockaddr_in()
             address.sin_family = sa_family_t(AF_INET)
             address.sin_port = in_port_t(UInt16(port).bigEndian)
@@ -126,7 +130,12 @@ final class TestSSHServer: @unchecked Sendable {
 /// Linux can miss a child's exit while another child (sshd) is alive.
 enum Spawn {
     static func start(_ path: String, _ arguments: [String], output: String) throws -> pid_t {
+        // A struct on Linux, an opaque pointer on Darwin.
+        #if canImport(Glibc)
         var actions = posix_spawn_file_actions_t()
+        #else
+        var actions: posix_spawn_file_actions_t?
+        #endif
         posix_spawn_file_actions_init(&actions)
         defer { posix_spawn_file_actions_destroy(&actions) }
         posix_spawn_file_actions_addopen(&actions, 0, "/dev/null", O_RDONLY, 0)
