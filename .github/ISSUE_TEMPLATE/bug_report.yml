@@ -1,0 +1,40 @@
+name: Bug report
+description: Something doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. **Security problems go through Security → Report a vulnerability, not here.**
+        Please leave out hostnames, IP addresses, usernames, keys and anything else you'd rather not publish.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a terminal to a server running …
+        2. …
+  - type: input
+    id: device
+    attributes:
+      label: Device and iOS version
+      placeholder: iPhone 15, iOS 18.2
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Portlight version or commit
+      placeholder: Settings → About Portlight, or the git commit you built
+  - type: input
+    id: server
+    attributes:
+      label: Server (if it's about a connection)
+      placeholder: OpenSSH 9.6 on Ubuntu 24.04, via a jump host

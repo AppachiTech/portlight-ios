@@ -1,0 +1,21 @@
+name: Feature request
+description: An idea that would make Portlight more useful.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation where Portlight falls short, in your own words.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+      description: How you picture it working. Screenshots or sketches are welcome.
+  - type: textarea
+    id: other
+    attributes:
+      label: Anything else
+      description: Other apps that do this well, workarounds you use now.

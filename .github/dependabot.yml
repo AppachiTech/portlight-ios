@@ -1,0 +1,12 @@
+# Weekly update pull requests for the pinned GitHub Actions and Swift
+# packages. They still go through CI and review like any other change.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: swift
+    directory: /PortlightCore
+    schedule:
+      interval: weekly
