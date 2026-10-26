@@ -16,11 +16,16 @@ Follow [BUILDING.md](BUILDING.md). It takes about ten minutes the first time.
 ## 2. Sign a release build
 
 Tagged releases on GitHub include an **unsigned** `Portlight.ipa` built by
-CI, plus its SHA-256 checksum. Before installing:
+CI, plus its SHA-256 checksum and a build provenance attestation. Before
+installing:
 
 1. Check the checksum: `shasum -a 256 Portlight.ipa` must match
    `Portlight.ipa.sha256`.
-2. Sign and install it with your own Apple ID using an open-source
+2. Check it was built by this repository's release workflow, with the
+   [GitHub CLI](https://cli.github.com): `gh attestation verify Portlight.ipa --repo <owner>/portlight`.
+   The checksum only catches a damaged download; the attestation shows
+   the file came from the workflow, unchanged.
+3. Sign and install it with your own Apple ID using an open-source
    sideloading tool such as [SideStore](https://sidestore.io) or
    [AltStore](https://altstore.io).
 
