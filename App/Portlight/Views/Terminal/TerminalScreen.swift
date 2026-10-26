@@ -262,7 +262,7 @@ struct TerminalPane: View {
                 let input = snippet.input(allowRun: model.library.settings.runSavedCommands)
                 let controller = model.terminal(for: session)
                 if input.pressReturn {
-                    controller.session.send(Array((input.text + "\r").utf8))
+                    controller.session.send(PastedText.bytes(for: input.text, bracketed: false) + [0x0D])
                 } else {
                     controller.type(input.text)
                 }

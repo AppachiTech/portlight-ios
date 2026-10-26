@@ -4,7 +4,8 @@ import SwiftUI
 import UIKit
 
 /// SwiftTerm's terminal view with Portlight's clipboard rules: copies stay on
-/// this device and expire, and multi-line pastes are confirmed first.
+/// this device and expire, pastes are cleaned of control characters, and
+/// multi-line pastes are confirmed first.
 final class PortlightTerminalView: TerminalView {
     /// Asks the user before pasting text that would run several lines.
     var confirmPaste: ((String, @escaping (Bool) -> Void) -> Void)?
@@ -30,17 +31,22 @@ final class PortlightTerminalView: TerminalView {
         clearSelection()
     }
 
+    /// Replaces SwiftTerm's paste, which sends the clipboard as is: the
+    /// text is cleaned (no ESC to end a bracketed paste early) and, without
+    /// bracketed paste, several lines need a confirmation.
     override func paste(_ sender: Any?) {
-        guard let text = UIPasteboard.general.string, !text.isEmpty else { return }
-        let multiLine = text.contains("\n") || text.contains("\r")
-        if multiLine, !getTerminal().bracketedPasteMode, let confirmPaste {
+        guard let raw = UIPasteboard.general.string else { return }
+        let text = PastedText.cleaned(raw)
+        guard !text.isEmpty else { return }
+        let bracketed = getTerminal().bracketedPasteMode
+        if PastedText.hasLineBreak(text), !bracketed, let confirmPaste {
             // Without bracketed paste every newline is an Enter: make sure.
             confirmPaste(text) { [weak self] ok in
-                if ok { self?.send(txt: text) }
+                if ok { self?.send(PastedText.bytes(for: text, bracketed: false)) }
             }
             return
         }
-        super.paste(sender)
+        send(PastedText.bytes(for: text, bracketed: bracketed))
     }
 }
 
@@ -119,17 +125,16 @@ final class TerminalController: NSObject, TerminalViewDelegate {
     /// paste where the program supports it, so none of them run; otherwise
     /// the user confirms first, as with any multi-line paste.
     func type(_ text: String) {
-        guard !text.isEmpty else { return }
-        let multiLine = text.contains("\n") || text.contains("\r")
-        if !multiLine {
-            MainActor.assumeIsolated { session.send(Array(text.utf8)) }
-        } else if view.getTerminal().bracketedPasteMode {
-            MainActor.assumeIsolated { session.send(Array(("\u{1B}[200~" + text + "\u{1B}[201~").utf8)) }
-        } else {
-            onConfirmPaste(text) { [weak self] ok in
+        let cleaned = PastedText.cleaned(text)
+        guard !cleaned.isEmpty else { return }
+        let bracketed = view.getTerminal().bracketedPasteMode
+        if PastedText.hasLineBreak(cleaned), !bracketed {
+            onConfirmPaste(cleaned) { [weak self] ok in
                 guard ok, let self else { return }
-                MainActor.assumeIsolated { self.session.send(Array(text.utf8)) }
+                MainActor.assumeIsolated { self.session.send(PastedText.bytes(for: cleaned, bracketed: false)) }
             }
+        } else {
+            MainActor.assumeIsolated { session.send(PastedText.bytes(for: cleaned, bracketed: bracketed)) }
         }
     }
 
