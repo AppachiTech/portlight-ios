@@ -3,7 +3,7 @@ import Testing
 @testable import PortlightKit
 
 @Suite struct AppLockPolicyTests {
-    let t0 = Date(timeIntervalSince1970: 1_790_000_000)
+    let t0 = ContinuousClock.now
 
     @Test func startsLockedAndLocksImmediatelyByDefault() {
         var policy = AppLockPolicy()
@@ -12,7 +12,7 @@ import Testing
         #expect(!policy.isLocked)
         policy.didEnterBackground(at: t0)
         #expect(policy.isLocked)
-        let locks1 = policy.willEnterForeground(at: t0.addingTimeInterval(1))
+        let locks1 = policy.willEnterForeground(at: t0.advanced(by: .seconds(1)))
         #expect(locks1)
     }
 
@@ -20,18 +20,19 @@ import Testing
         var policy = AppLockPolicy(gracePeriod: 60)
         policy.unlocked()
         policy.didEnterBackground(at: t0)
-        let locks2 = policy.willEnterForeground(at: t0.addingTimeInterval(59))
+        let locks2 = policy.willEnterForeground(at: t0.advanced(by: .seconds(59)))
         #expect(!locks2)
         policy.didEnterBackground(at: t0)
-        let locks3 = policy.willEnterForeground(at: t0.addingTimeInterval(60))
+        let locks3 = policy.willEnterForeground(at: t0.advanced(by: .seconds(60)))
         #expect(locks3)
     }
 
-    @Test func clockGoingBackwardsLocks() {
+    @Test func anEarlierInstantLocks() {
+        // Can't happen on a monotonic clock, but if it did, lock.
         var policy = AppLockPolicy(gracePeriod: 300)
         policy.unlocked()
         policy.didEnterBackground(at: t0)
-        let locks4 = policy.willEnterForeground(at: t0.addingTimeInterval(-10))
+        let locks4 = policy.willEnterForeground(at: t0.advanced(by: .seconds(-10)))
         #expect(locks4)
     }
 

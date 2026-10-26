@@ -2,13 +2,16 @@ import Foundation
 
 /// When the app must ask for Face ID, Touch ID or the passcode. The lock
 /// can't be turned off; only a short grace period after leaving the app is
-/// configurable.
+/// configurable. Time away is measured on ContinuousClock, which keeps
+/// counting while the phone sleeps and ignores changes to the date and
+/// time in Settings, so setting the clock back can't stretch the grace
+/// period.
 public struct AppLockPolicy: Equatable, Sendable {
     /// Grace periods offered in Settings, in seconds.
     public static let allowedGracePeriods = [0, 30, 60, 300]
 
     public private(set) var isLocked = true
-    private var backgroundedAt: Date?
+    private var backgroundedAt: ContinuousClock.Instant?
     public var gracePeriod: TimeInterval
 
     public init(gracePeriod: Int = 0) {
@@ -22,21 +25,20 @@ public struct AppLockPolicy: Equatable, Sendable {
     }
 
     /// The app left the foreground (or the screen locked).
-    public mutating func didEnterBackground(at date: Date = Date()) {
+    public mutating func didEnterBackground(at now: ContinuousClock.Instant = .now) {
         if gracePeriod == 0 {
             isLocked = true
         } else if backgroundedAt == nil {
-            backgroundedAt = date
+            backgroundedAt = now
         }
     }
 
     /// The app is coming back. Returns true when it must authenticate.
-    public mutating func willEnterForeground(at date: Date = Date()) -> Bool {
+    public mutating func willEnterForeground(at now: ContinuousClock.Instant = .now) -> Bool {
         if let since = backgroundedAt {
             backgroundedAt = nil
-            // A clock moved backwards also locks.
-            let away = date.timeIntervalSince(since)
-            if away < 0 || away >= gracePeriod { isLocked = true }
+            let away = since.duration(to: now)
+            if away < .zero || away >= .seconds(gracePeriod) { isLocked = true }
         }
         return isLocked
     }
