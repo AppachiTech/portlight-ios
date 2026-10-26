@@ -22,13 +22,15 @@ import Testing
         #expect(CommandSecrets.problems(in: command).isEmpty, "\(command)")
     }
 
-    @Test(arguments: [
+    /// Commands holding a secret. Token-shaped values are split so secret
+    /// scanners don't flag this file; they're made-up examples.
+    static let withSecrets: [String] = [
         "mysql -u root -phunter2",
         "sshpass -p hunter2 ssh me@host",
         "export DB_PASSWORD=hunter2",
-        "AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY aws s3 ls",
-        "aws configure set aws_access_key_id AKIAIOSFODNN7EXAMPLE",
-        "git clone https://ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789@github.com/me/repo",
+        "AWS_SECRET_ACCESS_KEY=" + "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY aws s3 ls",
+        "aws configure set aws_access_key_id " + "AKIA" + "IOSFODNN7EXAMPLE",
+        "git clone https://" + "ghp_" + "aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789@github.com/me/repo",
         "curl -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc' https://x",
         "psql postgres://app:hunter2@db.internal/app",
         "vault login token=s.abcdefgh12345678",
@@ -36,8 +38,10 @@ import Testing
         "app --password hunter2",
         "echo '-----BEGIN OPENSSH PRIVATE KEY-----'",
         "curl -u admin:hunter2 https://example.com",
-        "SLACK=xoxb-123456789012-abcdefghij",
-    ])
+        "SLACK=" + "xoxb-" + "123456789012-abcdefghij",
+    ]
+
+    @Test(arguments: withSecrets)
     func secretsAreCaught(_ command: String) {
         #expect(!CommandSecrets.problems(in: command).isEmpty, "\(command)")
     }

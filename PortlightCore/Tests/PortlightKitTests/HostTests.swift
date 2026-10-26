@@ -43,7 +43,7 @@ import Testing
         #expect(CloudProvider.aws.suggestedUsernames.first == "ec2-user")
         #expect(CloudProvider.azure.suggestedUsernames == ["azureuser"])
         let key = SSHPrivateKey.generate(.ed25519).publicKey
-        #expect(CloudProvider.gcp.authorizedKeyLine(for: key, username: "madhu", keyName: "iPhone").hasSuffix(" madhu"))
+        #expect(CloudProvider.gcp.authorizedKeyLine(for: key, username: "alice", keyName: "iPhone").hasSuffix(" alice"))
         #expect(CloudProvider.aws.authorizedKeyLine(for: key, username: "ec2-user", keyName: "iPhone").hasSuffix(" iPhone"))
     }
 
@@ -93,7 +93,7 @@ import Testing
 
     Host gcp-vm
       Hostname "34.1.2.3"
-      user madhu
+      user alice
 
     Match host *.corp
       User corp
@@ -121,7 +121,7 @@ import Testing
         #expect(byAlias["db"]?.user == "ubuntu")
         #expect(byAlias["db"]?.hostname == "10.0.2.20")
         #expect(byAlias["gcp-vm"]?.hostname == "34.1.2.3")
-        #expect(byAlias["gcp-vm"]?.user == "madhu")
+        #expect(byAlias["gcp-vm"]?.user == "alice")
         #expect(byAlias["gcp-vm"]?.port == 22)
         #expect(result.warnings.contains { $0.contains("Match") })
         #expect(result.warnings.contains { $0.contains("Include") })
