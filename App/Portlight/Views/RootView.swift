@@ -1,8 +1,9 @@
 import PortlightSSH
 import SwiftUI
 
-/// Shows the lock screen until the device owner authenticates, covers the
-/// app in the app switcher, and re-locks when the app leaves the foreground.
+/// Shows the lock screen until the device owner authenticates, and
+/// re-locks when the app leaves the foreground. PrivacyShield covers the
+/// app in the app switcher.
 struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
@@ -18,9 +19,6 @@ struct RootView: View {
             } else {
                 LockScreenView()
                     .transition(.opacity)
-            }
-            if scenePhase != .active {
-                PrivacyCover()
             }
         }
         .animation(.easeInOut(duration: 0.2), value: model.lock.isUnlocked)

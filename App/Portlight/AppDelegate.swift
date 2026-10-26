@@ -4,6 +4,13 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     /// What the app may rotate to. The terminal narrows it to turn the
     /// screen; see OrientationLock.
     static var orientationMask: UIInterfaceOrientationMask = OrientationLock.deviceDefault
+    private var privacyShield: PrivacyShield?
+
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        privacyShield = PrivacyShield()
+        return true
+    }
 
     /// Refuses third-party keyboards everywhere in the app. Everything typed
     /// into a terminal (including passwords at sudo prompts) would otherwise
