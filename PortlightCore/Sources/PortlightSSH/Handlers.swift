@@ -204,6 +204,40 @@ final class ChannelDataUnwrapper: ChannelDuplexHandler {
     }
 }
 
+/// Keeps a server from outrunning the terminal. Output goes into an
+/// AsyncStream that the terminal drains on the main thread; once
+/// `pauseAbove` bytes are waiting, the channel stops reading, so the SSH
+/// window fills and the server pauses instead of the backlog growing until
+/// the app runs out of memory. Reading resumes below `resumeBelow`.
+final class OutputFlow: @unchecked Sendable {
+    static let pauseAbove = 1 << 20
+    static let resumeBelow = 256 << 10
+
+    private let lock = NIOLock()
+    private var waiting = 0
+    private var paused = false
+
+    /// Output was queued (on the event loop). True means stop reading.
+    func queued(_ count: Int) -> Bool {
+        lock.withLock {
+            waiting += count
+            guard !paused, waiting > Self.pauseAbove else { return false }
+            paused = true
+            return true
+        }
+    }
+
+    /// Output was drawn. True means start reading again.
+    func handled(_ count: Int) -> Bool {
+        lock.withLock {
+            waiting = max(0, waiting - count)
+            guard paused, waiting < Self.resumeBelow else { return false }
+            paused = false
+            return true
+        }
+    }
+}
+
 /// Drives an interactive session channel: requests a PTY and a shell,
 /// forwards output to an AsyncStream and reports how the shell ended.
 final class ShellHandler: ChannelDuplexHandler {
@@ -215,17 +249,19 @@ final class ShellHandler: ChannelDuplexHandler {
     private let size: TerminalSize
     private let environment: [(String, String)]
     private let continuation: AsyncStream<ShellEvent>.Continuation
+    private let flow: OutputFlow
     private var started: EventLoopPromise<Void>?
     private var pendingReplies = 2  // pty-req and shell
     private var exitStatus: Int?
     private var exitSignal: String?
 
     init(term: String, size: TerminalSize, environment: [(String, String)],
-         continuation: AsyncStream<ShellEvent>.Continuation, started: EventLoopPromise<Void>) {
+         continuation: AsyncStream<ShellEvent>.Continuation, flow: OutputFlow, started: EventLoopPromise<Void>) {
         self.term = term
         self.size = size
         self.environment = environment
         self.continuation = continuation
+        self.flow = flow
         self.started = started
     }
 
@@ -278,6 +314,9 @@ final class ShellHandler: ChannelDuplexHandler {
         guard case .byteBuffer(let buffer) = message.data else { return }
         if let bytes = buffer.getBytes(at: buffer.readerIndex, length: buffer.readableBytes), !bytes.isEmpty {
             continuation.yield(.output(bytes))
+            if flow.queued(bytes.count) {
+                context.channel.setOption(ChannelOptions.autoRead, value: false).whenFailure { _ in }
+            }
         }
     }
 

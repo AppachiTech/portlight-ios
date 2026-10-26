@@ -255,6 +255,7 @@ public final class TerminalSession: Identifiable {
                 switch event {
                 case .output(let bytes):
                     self.deliver(bytes)
+                    shell.outputHandled(bytes.count)
                 case .exited(let status, let signal):
                     self.shellEnded(status: status, signal: signal)
                 }

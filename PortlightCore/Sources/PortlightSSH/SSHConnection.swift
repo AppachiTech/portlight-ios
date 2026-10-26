@@ -166,7 +166,9 @@ public final class SSHConnection: Sendable {
     /// Starts an interactive shell with a PTY.
     public func openShell(term: String = "xterm-256color", size: TerminalSize = .standard,
                           environment: [String: String] = ["LANG": "en_US.UTF-8"]) async throws -> SSHShell {
+        // Unbounded here, but OutputFlow stops reading once ~1 MiB waits.
         let (stream, continuation) = AsyncStream.makeStream(of: ShellEvent.self, bufferingPolicy: .unbounded)
+        let flow = OutputFlow()
         let startedBox = PromiseBox()
         let env = environment.sorted { $0.key < $1.key }.map { ($0.key, $0.value) }
         let child: Channel
@@ -175,14 +177,15 @@ public final class SSHConnection: Sendable {
                 let started = child.eventLoop.makePromise(of: Void.self)
                 startedBox.set(started)
                 try child.pipeline.syncOperations.addHandler(
-                    ShellHandler(term: term, size: size, environment: env, continuation: continuation, started: started))
+                    ShellHandler(term: term, size: size, environment: env, continuation: continuation, flow: flow,
+                                 started: started))
             }
         } catch {
             continuation.finish()
             throw SSHConnectionError.channelRejected("open a session")
         }
         try await startedBox.future?.get()
-        return SSHShell(channel: child, events: stream)
+        return SSHShell(channel: child, events: stream, flow: flow)
     }
 
     /// Runs one command without a PTY and returns its output.
@@ -240,12 +243,24 @@ private let keepAliveIdleOption = TCP_KEEPIDLE
 /// A running remote shell.
 public final class SSHShell: Sendable {
     let channel: Channel
-    /// Terminal output, then one `.exited` event when the shell ends.
+    /// Terminal output, then one `.exited` event when the shell ends. Call
+    /// `outputHandled` as output is used, or reading pauses at ~1 MiB.
     public let events: AsyncStream<ShellEvent>
+    let flow: OutputFlow
 
-    init(channel: Channel, events: AsyncStream<ShellEvent>) {
+    init(channel: Channel, events: AsyncStream<ShellEvent>, flow: OutputFlow) {
         self.channel = channel
         self.events = events
+        self.flow = flow
+    }
+
+    /// Output from `events` has been used; lets a paused channel read again.
+    public func outputHandled(_ count: Int) {
+        guard flow.handled(count) else { return }
+        let channel = channel
+        channel.eventLoop.execute {
+            channel.setOption(ChannelOptions.autoRead, value: true).whenSuccess { channel.read() }
+        }
     }
 
     /// Sends keystrokes or pasted text.

@@ -109,6 +109,38 @@ struct SSHIntegrationTests {
         await connection.close()
     }
 
+    @Test func readingPausesUntilOutputIsHandled() async throws {
+        let server = try server()
+        defer { server.stop() }
+        let connection = try await SSHConnection.connect(to: endpoint(server, [.key(Self.keys[.ed25519]!)])) { _ in true }
+        let shell = try await connection.openShell()
+        // ~12 MB of output, then a marker.
+        shell.write("head -c 12000000 /dev/zero | tr '\\0' a; echo; echo DONE-$((2*21))\n")
+        let counter = ByteCounter()
+        let unhandled = Task {
+            for await event in shell.events {
+                guard case .output(let bytes) = event else { continue }
+                if await counter.add(bytes) { return }
+            }
+        }
+        try await Task.sleep(for: .seconds(2))
+        // Nothing handled: the backlog stops near the 1 MiB pause point
+        // plus one SSH window, far short of the 12 MB sent.
+        let stalled = await counter.total
+        #expect(stalled > 0 && stalled < 8_000_000, "\(stalled) bytes")
+        // Handling it lets the rest through.
+        await counter.setHandler { shell.outputHandled($0) }
+        shell.outputHandled(stalled)
+        let deadline = ContinuousClock.now + .seconds(30)
+        while !(await counter.sawMarker), ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        #expect(await counter.sawMarker)
+        unhandled.cancel()
+        shell.close()
+        await connection.close()
+    }
+
     @Test func jumpHostTunnelsToTheTarget() async throws {
         let bastion = try server()
         let target = try server()
@@ -200,21 +232,40 @@ actor SeenKeys {
 }
 
 /// Collects a shell's output so tests can wait for text to appear.
+actor ByteCounter {
+    private(set) var total = 0
+    private(set) var sawMarker = false
+    private var tail: [UInt8] = []
+    private var handler: ((Int) -> Void)?
+
+    func setHandler(_ handler: @escaping @Sendable (Int) -> Void) { self.handler = handler }
+
+    /// Returns true once the marker has been seen.
+    func add(_ bytes: [UInt8]) -> Bool {
+        total += bytes.count
+        handler?(bytes.count)
+        tail = Array((tail + bytes).suffix(64))
+        if String(decoding: tail, as: UTF8.self).contains("DONE-42") { sawMarker = true }
+        return sawMarker
+    }
+}
+
 actor OutputReader {
     private(set) var text = ""
     private var exit: (status: Int?, signal: String?)?
     private var task: Task<Void, Never>?
 
     init(_ shell: SSHShell) {
-        let events = shell.events
-        Task { await self.start(events) }
+        Task { await self.start(shell) }
     }
 
-    private func start(_ events: AsyncStream<ShellEvent>) {
+    private func start(_ shell: SSHShell) {
         task = Task {
-            for await event in events {
+            for await event in shell.events {
                 switch event {
-                case .output(let bytes): self.append(bytes)
+                case .output(let bytes):
+                    self.append(bytes)
+                    shell.outputHandled(bytes.count)
                 case .exited(let status, let signal): self.finish(status, signal)
                 }
             }
