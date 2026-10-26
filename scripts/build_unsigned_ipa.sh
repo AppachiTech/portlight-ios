@@ -16,6 +16,7 @@ archive() {
     -configuration Release \
     -destination 'generic/platform=iOS' \
     -archivePath build/Portlight.xcarchive \
+    -onlyUsePackageVersionsFromResolvedFile -disableAutomaticPackageResolution \
     CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
 }
 if command -v xcbeautify >/dev/null; then

@@ -6,16 +6,25 @@ on:
 
 permissions:
   contents: write
+  # Build provenance: lets anyone check the IPA came from this workflow.
+  id-token: write
+  attestations: write
 
 jobs:
   unsigned-ipa:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install tools
-        run: brew install xcodegen
+        with:
+          persist-credentials: false
+      - name: Install XcodeGen (pinned, checksum verified)
+        run: scripts/install_xcodegen.sh "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - name: Build unsigned IPA
         run: scripts/build_unsigned_ipa.sh
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: build/Portlight.ipa
       - name: Keep the build
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -32,4 +41,5 @@ jobs:
           body: |
             Unsigned build. iOS installs only signed apps: sign this with your own Apple ID
             (AltStore or SideStore), or build from source. See docs/INSTALL.md.
-            Compare the SHA-256 with Portlight.ipa.sha256 before installing.
+            Compare the SHA-256 with Portlight.ipa.sha256 before installing, and check the
+            build provenance: gh attestation verify Portlight.ipa --repo ${{ github.repository }}

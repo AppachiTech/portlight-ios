@@ -12,29 +12,33 @@ jobs:
   core-linux:
     name: Core tests (Linux, with a real sshd)
     runs-on: ubuntu-24.04
-    container: swift:6.4.1-noble
+    container: swift:6.4.1-noble@sha256:19cbe56bdaec1918f7cf5fdeba42b9bd55bdd8a6149c9990d0e0e3a89a127d63
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install OpenSSH (server for the integration tests)
         run: |
           apt-get update && apt-get install -y --no-install-recommends openssh-server openssh-client
           mkdir -p /run/sshd
       - name: Test
         working-directory: PortlightCore
-        run: swift test
+        run: swift test --force-resolved-versions
 
   app-ios:
     name: App build (iOS, unsigned)
     runs-on: macos-15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install XcodeGen
-        run: brew install xcodegen
+        with:
+          persist-credentials: false
+      - name: Install XcodeGen (pinned, checksum verified)
+        run: scripts/install_xcodegen.sh "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - name: Core tests (macOS, without the sshd tests)
         working-directory: PortlightCore
         env:
           PORTLIGHT_SKIP_SSHD: "1"
-        run: swift test
+        run: swift test --force-resolved-versions
       - name: Generate project
         run: xcodegen generate
       - name: Build
@@ -42,4 +46,5 @@ jobs:
           xcodebuild build \
             -project Portlight.xcodeproj -scheme Portlight \
             -destination 'generic/platform=iOS' \
+            -onlyUsePackageVersionsFromResolvedFile -disableAutomaticPackageResolution \
             CODE_SIGNING_ALLOWED=NO
