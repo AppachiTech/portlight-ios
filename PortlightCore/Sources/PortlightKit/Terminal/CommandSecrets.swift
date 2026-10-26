@@ -27,20 +27,22 @@ public enum CommandSecrets {
         }
     }
 
+    // Quantifiers before a fixed point are bounded so every rule stays
+    // linear: this runs on the main thread while the editor redraws.
     private static let rules: [Rule] = [
         Rule(#"-----BEGIN [A-Z ]*PRIVATE KEY-----"#, "a private key"),
         Rule(#"\b(AKIA|ASIA)[0-9A-Z]{16}\b"#, "an AWS access key"),
         Rule(#"\b(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|glpat-[A-Za-z0-9_-]{16,}|xox[abprs]-[A-Za-z0-9-]{10,}|sk-[A-Za-z0-9_-]{16,})"#,
              "an access token"),
         Rule(#"\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\."#, "a web token (JWT)"),
-        Rule(#"[a-z][a-z0-9+.-]*://[^/\s:@]+:[^/\s@]+@"#, "a password inside a URL"),
-        Rule(#"authorization:\s*(bearer|basic|token)\s+(?![$<])[^\s'"]+"#, "an authorization header with its credentials"),
-        Rule(#"[\w.-]*(password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)[\w.-]*['"]?\s*[=:]\s*['"]?(?![$<{\s'"])[^\s'"]+"#,
+        Rule(#"[a-z][a-z0-9+.-]{0,15}://[^/\s:@]{1,256}:[^/\s@]{1,256}@"#, "a password inside a URL"),
+        Rule(#"authorization:\s{0,8}(bearer|basic|token)\s{1,8}(?![$<])[^\s'"]+"#, "an authorization header with its credentials"),
+        Rule(#"(password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)[\w.-]{0,64}['"]?\s{0,8}[=:]\s{0,8}['"]?(?![$<{\s'"])[^\s'"]+"#,
              "a password, key or token value"),
-        Rule(#"(^|\s)--?(password|passwd|pass|token|secret|api-?key|access-key|secret-key|auth-token)(=|\s+)['"]?(?![$<\s-])[^\s'"]+"#,
+        Rule(#"(^|\s)--?(password|passwd|pass|token|secret|api-?key|access-key|secret-key|auth-token)(=|\s{1,8})['"]?(?![$<\s-])[^\s'"]+"#,
              "a password or token given as an option"),
-        Rule(#"\bsshpass\s+-p\s*['"]?(?![$<])\S+"#, "a password given to sshpass"),
-        Rule(#"\b(mysql|mysqldump|mariadb)\b[^|;&]*\s-p(?![\s$<]|$)\S+"#, "a database password after -p"),
-        Rule(#"\s(-u|--user)\s+['"]?[^\s:'"]+:(?![$<\s])[^\s'"]+"#, "a username and password"),
+        Rule(#"\bsshpass\s{1,8}-p\s{0,8}['"]?(?![$<])\S+"#, "a password given to sshpass"),
+        Rule(#"\b(mysql|mysqldump|mariadb)\b[^|;&]{0,512}\s-p(?![\s$<]|$)\S+"#, "a database password after -p"),
+        Rule(#"\s(-u|--user)\s{1,8}['"]?[^\s:'"]{1,256}:(?![$<\s])[^\s'"]+"#, "a username and password"),
     ]
 }

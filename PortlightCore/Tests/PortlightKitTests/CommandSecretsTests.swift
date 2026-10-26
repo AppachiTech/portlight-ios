@@ -50,6 +50,24 @@ import Testing
         #expect(problems.allSatisfy { !$0.contains("hunter2") && !$0.contains(":pw@") })
     }
 
+    @Test(arguments: [
+        String(repeating: "token", count: 2000),
+        String(repeating: "password_", count: 1200),
+        "a://" + String(repeating: "x:", count: 5000),
+        "--password" + String(repeating: " ", count: 10000),
+        "-u " + String(repeating: "a", count: 10000),
+        "authorization: bearer" + String(repeating: " ", count: 10000),
+        "mysql " + String(repeating: "a ", count: 5000),
+        String(repeating: "eyJabcde.", count: 1200),
+    ])
+    func longInputStaysFast(_ input: String) {
+        // The check runs on the main thread as the editor redraws, so it
+        // must stay linear: a 2,000-character string once took 12 seconds.
+        let started = ContinuousClock.now
+        _ = CommandSecrets.problems(in: input)
+        #expect(ContinuousClock.now - started < .milliseconds(500), "\(input.prefix(20))…")
+    }
+
     @Test func startersPassTheirOwnCheck() {
         for snippet in Snippet.starters {
             #expect(CommandSecrets.problems(in: snippet.command).isEmpty, "\(snippet.command)")
