@@ -53,7 +53,8 @@ server through it, and asks about each one's host key the first time.
 
 ## The terminal
 
-- **Key bar.** Swipe sideways for more keys.
+- **Key bar.** Swipe sideways for more keys. The button at its left edge
+  hides the keyboard, which brings the voice strip back.
   - **ctrl** and **alt** apply to the next key you press. Tap twice to lock
     them, and once more to release.
   - Arrows and delete repeat while held.
