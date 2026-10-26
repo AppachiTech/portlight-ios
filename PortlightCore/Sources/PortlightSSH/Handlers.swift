@@ -327,8 +327,11 @@ final class ShellHandler: ChannelDuplexHandler {
         let message = unwrapInboundIn(data)
         guard case .byteBuffer(let buffer) = message.data else { return }
         if let bytes = buffer.getBytes(at: buffer.readerIndex, length: buffer.readableBytes), !bytes.isEmpty {
+            // Count the bytes before the reader can see them. Otherwise it can
+            // report them handled before they're counted, leaving the count high.
+            let pause = flow.queued(bytes.count)
             continuation.yield(.output(bytes))
-            if flow.queued(bytes.count) {
+            if pause {
                 context.channel.setOption(ChannelOptions.autoRead, value: false).whenFailure { _ in }
             }
         }
