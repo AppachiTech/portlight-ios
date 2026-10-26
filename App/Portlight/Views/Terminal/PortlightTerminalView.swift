@@ -91,9 +91,13 @@ final class TerminalController: NSObject, TerminalViewDelegate {
 
     private func attach() {
         view.confirmPaste = { [weak self] text, answer in self?.onConfirmPaste(text, answer) }
+        // Server output passes through TerminalOutputFilter first, which
+        // drops kitty graphics, over-long strings and title-stack floods.
+        let filter = TerminalOutputFilter()
         MainActor.assumeIsolated {
             session.attach { [weak view = self.view] bytes in
-                view?.feed(byteArray: bytes[...])
+                let safe = filter.process(bytes)
+                if !safe.isEmpty { view?.feed(byteArray: safe[...]) }
             }
         }
         let center = NotificationCenter.default
