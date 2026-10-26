@@ -29,8 +29,9 @@ jobs:
     name: App build (iOS, unsigned)
     runs-on: macos-26
     env:
-      # The oldest Xcode the docs promise: the locked packages need Swift 6.2.
-      DEVELOPER_DIR: /Applications/Xcode_26.0.1.app/Contents/Developer
+      # The oldest Xcode on this image with its iOS platform installed;
+      # the locked packages need Xcode 26 (Swift 6.2) or later.
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

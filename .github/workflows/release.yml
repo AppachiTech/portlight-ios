@@ -14,8 +14,8 @@ jobs:
   unsigned-ipa:
     runs-on: macos-26
     env:
-      # The same Xcode as CI, the oldest the docs promise.
-      DEVELOPER_DIR: /Applications/Xcode_26.0.1.app/Contents/Developer
+      # The same Xcode as CI.
+      DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
