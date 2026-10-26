@@ -31,8 +31,17 @@ struct TerminalScreen: View {
         .preferredColorScheme(theme.isDark ? .dark : .light)
         .statusBarHidden(verticalSizeClass == .compact)
         .persistentSystemOverlays(verticalSizeClass == .compact ? .hidden : .automatic)
-        .onAppear { UIApplication.shared.isIdleTimerDisabled = model.library.settings.keepScreenAwake }
-        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
+        .onAppear {
+            UIApplication.shared.isIdleTimerDisabled = model.library.settings.keepScreenAwake
+            OrientationLock.apply(model.library.settings.terminalOrientation)
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+            OrientationLock.apply(nil)
+        }
+        .onChange(of: model.library.settings.terminalOrientation) { _, orientation in
+            OrientationLock.apply(orientation)
+        }
     }
 }
 
@@ -60,6 +69,7 @@ struct SessionTabBar: View {
                 }
                 .padding(.vertical, 2)
             }
+            TerminalViewControls(compact: compact)
             Button(action: onMinimize) {
                 Image(systemName: "plus")
                     .frame(width: 34, height: 30)
@@ -70,6 +80,78 @@ struct SessionTabBar: View {
         .padding(.horizontal, 8)
         .padding(.vertical, compact ? 2 : 6)
         .background(.bar)
+    }
+}
+
+/// Font size, rotation and the terminal's view options, in the tab bar.
+struct TerminalViewControls: View {
+    @Environment(AppModel.self) private var model
+    var compact: Bool
+
+    var body: some View {
+        @Bindable var library = model.library
+        let size = library.settings.fontSize
+        HStack(spacing: 2) {
+            Button {
+                library.settings.fontSize = AppSettings.fontSize(size, steppedBy: -1)
+            } label: {
+                Image(systemName: "textformat.size.smaller")
+                    .frame(width: 30, height: 30)
+            }
+            .disabled(size <= AppSettings.fontSizeRange.lowerBound)
+            .accessibilityLabel("Smaller text")
+            .accessibilityValue("\(Int(size)) points")
+            Button {
+                library.settings.fontSize = AppSettings.fontSize(size, steppedBy: 1)
+            } label: {
+                Image(systemName: "textformat.size.larger")
+                    .frame(width: 30, height: 30)
+            }
+            .disabled(size >= AppSettings.fontSizeRange.upperBound)
+            .accessibilityLabel("Larger text")
+            .accessibilityValue("\(Int(size)) points")
+            Button {
+                // Flip whichever way the screen faces now.
+                library.settings.terminalOrientation = compact ? .portrait : .landscape
+            } label: {
+                Image(systemName: compact ? "rectangle.portrait.rotate" : "rectangle.landscape.rotate")
+                    .frame(width: 30, height: 30)
+            }
+            .accessibilityLabel(compact ? "Turn to portrait" : "Turn to landscape")
+            Menu {
+                Section("Text size: \(Int(size)) pt") {
+                    Button {
+                        if let session = model.sessions.active,
+                           let fitted = model.terminal(for: session).fontSize(fittingColumns: 80) {
+                            library.settings.fontSize = fitted
+                        }
+                    } label: {
+                        Label("Fit 80 columns", systemImage: "arrow.left.and.right.text.vertical")
+                    }
+                    .disabled(model.sessions.active == nil)
+                }
+                Picker(selection: $library.settings.terminalOrientation) {
+                    Label("Follow the phone", systemImage: "iphone").tag(TerminalOrientation.automatic)
+                    Label("Landscape", systemImage: "rectangle").tag(TerminalOrientation.landscape)
+                    Label("Portrait", systemImage: "rectangle.portrait").tag(TerminalOrientation.portrait)
+                } label: {
+                    Label("Orientation", systemImage: "rectangle.landscape.rotate")
+                }
+                .pickerStyle(.menu)
+                Picker(selection: $library.settings.themeName) {
+                    ForEach(TerminalTheme.all) { theme in
+                        Text(theme.name).tag(theme.name)
+                    }
+                } label: {
+                    Label("Theme", systemImage: "paintpalette")
+                }
+                .pickerStyle(.menu)
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .frame(width: 30, height: 30)
+            }
+            .accessibilityLabel("Terminal options")
+        }
     }
 }
 

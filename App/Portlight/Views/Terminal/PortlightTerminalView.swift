@@ -97,6 +97,14 @@ final class TerminalController: NSObject, TerminalViewDelegate {
         _ = view.becomeFirstResponder()
     }
 
+    /// The font size that shows `columns` characters across the view now.
+    func fontSize(fittingColumns columns: Int) -> Double? {
+        let probe = UIFont.monospacedSystemFont(ofSize: 100, weight: .regular)
+        let advance = ("W" as NSString).size(withAttributes: [.font: probe]).width / 100
+        // A point of slack so rounding inside the terminal can't lose a column.
+        return AppSettings.fontSize(fitting: columns, inWidth: Double(view.bounds.width) - 1, advancePerPoint: Double(advance))
+    }
+
     // MARK: Settings
 
     func apply(_ settings: AppSettings) {
