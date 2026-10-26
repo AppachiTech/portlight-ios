@@ -101,9 +101,11 @@ microphone and speech recognition.
 
 Commands you run often, like `git status` or `terraform plan`, one tap away
 from **{ }** on the key bar or the voice strip. Add them there with **+**,
-or in **Settings → Saved commands**. Each one can press Return for you;
-leave that off for commands that change things, like `terraform apply`, so
-you can read them first.
+or in **Settings → Saved commands**. Picking one types it into the terminal
+without running it; press **⏎** when you're ready. To have some run
+straight away, turn on **Settings → Saved commands → Run straight away**,
+then switch on **Press Return after typing** for those commands. Leave it
+off for ones that change things, like `terraform apply`.
 
 Saved commands are stored as plain text, so Portlight won't save one that
 looks like it contains a password, key or token. Refer to secrets instead,
