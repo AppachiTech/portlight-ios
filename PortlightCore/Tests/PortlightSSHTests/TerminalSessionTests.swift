@@ -57,6 +57,25 @@ struct TerminalSessionTests {
         session.disconnect()
     }
 
+    @Test func aPromptLeftOpenWhenTheServerGivesUpIsClosed() async throws {
+        let record = try library.generateKey(named: "grace")
+        let server = try TestSSHServer(authorizedKeys: [record.publicKey], extraConfig: "LoginGraceTime 2")
+        defer { server.stop() }
+        let host = SSHHost(label: "grace", hostname: "127.0.0.1", port: server.port, username: server.username,
+                           auth: .key(record.id))
+        try library.save(host)
+        let session = TerminalSession(host: host, library: library)
+        session.connect()
+        try await waitUntil { session.hostKeyPrompt != nil }
+        // Unanswered until the server hangs up: the stale sheet must go.
+        try await waitUntil(.seconds(15)) {
+            if case .failed = session.state { return true }
+            return false
+        }
+        #expect(session.hostKeyPrompt == nil)
+        #expect(library.hostKeyVerdict(host: "127.0.0.1", port: server.port, key: server.hostKey) == .unknown)
+    }
+
     @Test func rejectingTheHostKeyFailsWithoutTrusting() async throws {
         let (server, host) = try setUp()
         defer { server.stop() }

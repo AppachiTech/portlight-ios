@@ -183,6 +183,7 @@ public final class TerminalSession: Identifiable {
         guard !state.isLive else { return }
         if let fresh = library.host(host.id) { host = fresh }
         connectTask?.cancel()
+        closePrompts()
         connectTask = Task { [weak self] in await self?.run() }
     }
 
@@ -193,10 +194,17 @@ public final class TerminalSession: Identifiable {
 
     public func disconnect() {
         connectTask?.cancel()
-        hostKeyPrompt?.resolve(false)
-        passwordPrompt?.resolve(nil)
+        closePrompts()
         teardown()
         if state.isLive { state = .disconnected("Disconnected") }
+    }
+
+    /// Answers any open prompt with no, so its sheet closes and its
+    /// waiting continuation resumes. Used when the attempt it belongs to
+    /// is over: disconnect, reconnect, or the server giving up meanwhile.
+    private func closePrompts() {
+        hostKeyPrompt?.resolve(false)
+        passwordPrompt?.resolve(nil)
     }
 
     private func teardown() {
@@ -231,14 +239,17 @@ public final class TerminalSession: Identifiable {
             state = .connected
             startReading(shell)
             if let command = host.startupCommand?.trimmingCharacters(in: .whitespacesAndNewlines), !command.isEmpty {
-                shell.write(Array(command.utf8) + [0x0D])
+                shell.write(PastedText.bytes(for: command, bracketed: false) + [0x0D])
             }
         } catch is CancellationError {
+            closePrompts()
             teardown()
         } catch is PromptCancelled {
+            closePrompts()
             teardown()
             state = .disconnected("Cancelled")
         } catch {
+            closePrompts()
             teardown()
             guard !Task.isCancelled else { return }
             let message = (error as? LocalizedError)?.errorDescription ?? String(describing: error)
