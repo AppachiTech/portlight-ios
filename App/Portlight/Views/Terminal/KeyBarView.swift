@@ -9,6 +9,10 @@ final class KeyBarView: UIInputView {
 
     private let scrollView = UIScrollView()
     private let stack = UIStackView()
+    /// Hides the keyboard, which brings the voice strip back. Pinned
+    /// outside the scrolling keys so it's always in reach, whatever the
+    /// saved layout holds.
+    private let hideButton = UIButton(type: .system)
     private var buttons: [KeyBarItem: UIButton] = [:]
     private let handler: (KeyBarItem) -> Void
     private var repeatTimer: Timer?
@@ -24,6 +28,20 @@ final class KeyBarView: UIInputView {
         autoresizingMask = [.flexibleWidth]
         allowsSelfSizing = true
 
+        var hide = UIButton.Configuration.plain()
+        hide.image = UIImage(systemName: "keyboard.chevron.compact.down")
+        hide.baseForegroundColor = .label
+        hide.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 10, bottom: 4, trailing: 8)
+        hideButton.configuration = hide
+        hideButton.accessibilityLabel = "Hide keyboard"
+        hideButton.translatesAutoresizingMaskIntoConstraints = false
+        hideButton.addAction(UIAction { [weak self] _ in self?.fire(.keyboard) }, for: .touchUpInside)
+        addSubview(hideButton)
+        let divider = UIView()
+        divider.backgroundColor = .separator
+        divider.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(divider)
+
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.alwaysBounceHorizontal = true
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -36,8 +54,15 @@ final class KeyBarView: UIInputView {
         scrollView.addSubview(stack)
 
         NSLayoutConstraint.activate([
-            scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            hideButton.leadingAnchor.constraint(equalTo: safeAreaLayoutGuide.leadingAnchor),
+            hideButton.topAnchor.constraint(equalTo: topAnchor),
+            hideButton.bottomAnchor.constraint(equalTo: bottomAnchor),
+            divider.leadingAnchor.constraint(equalTo: hideButton.trailingAnchor),
+            divider.widthAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale),
+            divider.topAnchor.constraint(equalTo: topAnchor, constant: 10),
+            divider.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -10),
+            scrollView.leadingAnchor.constraint(equalTo: divider.trailingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: safeAreaLayoutGuide.trailingAnchor),
             scrollView.topAnchor.constraint(equalTo: topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
             stack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 8),
@@ -60,7 +85,8 @@ final class KeyBarView: UIInputView {
         stack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         buttons.removeAll()
         var seen = Set<KeyBarItem>()
-        for item in items where seen.insert(item).inserted {
+        // The pinned button covers the keyboard toggle.
+        for item in items where item != .keyboard && seen.insert(item).inserted {
             let button = makeButton(for: item)
             buttons[item] = button
             stack.addArrangedSubview(button)
