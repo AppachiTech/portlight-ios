@@ -1,7 +1,9 @@
 # Installing Portlight
 
-Portlight isn't in the App Store, and iOS only runs apps signed for your
-device. There are three ways to get it on your phone.
+Portlight isn't on the App Store, and there are no plans to publish it there
+for now. iOS only runs apps signed for your device, so there are three ways
+to get it on your phone. New to this? [GETTING_STARTED.md](../GETTING_STARTED.md)
+walks through the first one step by step.
 
 ## 1. Build it yourself (recommended)
 

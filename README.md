@@ -8,8 +8,14 @@ servers (AWS, Google Cloud, Azure, DigitalOcean, or anything that speaks SSH)
 from your phone. It's an SSH client only: your tools, including the aws and
 gcloud CLIs, run on the servers you connect to.
 
-Portlight isn't on the App Store. You build it yourself from this repository,
-or install a build you signed. See [docs/INSTALL.md](docs/INSTALL.md).
+Portlight isn't on the App Store, and there are no plans to publish it there
+for now (that may change later). You build it yourself from this repository
+and install it on your own devices. **Start with [GETTING_STARTED.md](GETTING_STARTED.md):**
+it covers everything from building to your first connection.
+
+> **Heads-up:** with a free Apple ID, iOS stops a self-built app opening after
+> **7 days**; press Run in Xcode again to renew it. A paid developer account
+> makes installs last a year.
 
 > **Status:** early and actively developed. The core SSH and crypto code is
 > well tested, but Portlight hasn't had an external security audit. Read
@@ -66,12 +72,15 @@ brew install xcodegen
 make open          # generates Portlight.xcodeproj and opens it
 ```
 
-Pick your iPhone and press Run. Signing setup is in [docs/BUILDING.md](docs/BUILDING.md).
+Set up signing first, then pick your iPhone and press Run. The full
+walkthrough, including signing and the one-time Xcode prompts, is in
+[GETTING_STARTED.md](GETTING_STARTED.md).
 
 ## Documentation
 
 | Guide | For |
 | --- | --- |
+| [GETTING_STARTED.md](GETTING_STARTED.md) | **Start here:** build, install, connect your first server, keep it running |
 | [docs/BUILDING.md](docs/BUILDING.md) | Building, signing, running on your phone, troubleshooting |
 | [docs/INSTALL.md](docs/INSTALL.md) | Other ways to install, including signing a release build |
 | [docs/USING.md](docs/USING.md) | Adding servers, keys, the terminal, voice input, saved commands |
